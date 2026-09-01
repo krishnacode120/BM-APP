@@ -1,0 +1,16 @@
+{
+  "@@locale": "en",
+  "language": "Language",
+  "continue": "Continue",
+  "getStarted": "Get started",
+  "phoneLogin": "Continue with phone",
+  "enterPhone": "Enter your mobile number",
+  "verify": "Verify",
+  "home": "Home",
+  "orders": "Orders",
+  "cart": "Cart",
+  "profile": "Profile",
+  "searchHint": "Search materials, brands, categories...",
+  "shopByCategory": "Shop by Category",
+  "popularMaterials": "Popular Materials"
+}

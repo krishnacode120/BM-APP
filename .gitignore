@@ -1,0 +1,13 @@
+# Flutter/Dart
+.dart_tool/
+.packages
+.flutter-plugins
+.flutter-plugins-dependencies
+build/
+coverage/
+
+# Credentials and local Firebase configuration
+.env
+android/app/google-services.json
+ios/Runner/GoogleService-Info.plist
+
