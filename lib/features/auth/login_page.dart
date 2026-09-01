@@ -41,8 +41,9 @@ class _LoginPageState extends State<LoginPage> {
                       const Spacer(),
                       FilledButton(
                           onPressed: () {
-                            if (phone.text.trim().length >= 10)
+                            if (phone.text.trim().length >= 10) {
                               context.push('/otp', extra: phone.text.trim());
+                            }
                           },
                           child: Text(t.continueText)),
                     ]))));
