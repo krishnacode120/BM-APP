@@ -2,11 +2,11 @@
 
 BM is a Flutter customer app foundation for purchasing and enquiring about construction materials. It supports English and Tamil, an onboarding flow, phone OTP authentication boundaries, location-aware product abstractions, and a lightweight marketplace home experience.
 
-## Milestone 1 status
+## Milestone status
 
 Implemented: project structure, Material 3 design system, routing, English/Tamil localization, splash/onboarding, login and OTP UI, Firebase Auth service boundary, role-safe user model, environment placeholders, home navigation, sample repository abstraction, and starter tests.
 
-Not yet implemented: Firebase project credentials, real OTP execution, Firestore catalog, cart, orders, admin portal, FCM, and Excel synchronization. The app intentionally never claims Firebase is enabled when platform configuration is absent.
+Milestone 2 adds Firestore-backed category, product, location and pricing repository contracts; location preference persistence; inventory-aware product display; category/product detail routes; and development seed records. Firebase project credentials, real OTP execution, cart, orders, admin portal, FCM, and Excel synchronization remain pending. The app intentionally never claims Firebase is enabled when platform configuration is absent.
 
 ## Structure
 

@@ -1,13 +1,10 @@
+import 'package:bm/repositories/catalog_repositories.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:bm/repositories/product_repository.dart';
 
 void main() {
-  test('sample catalog exposes products with valid minimum orders', () async {
-    final products = await SampleProductRepository().popularProducts();
-    expect(products, isNotEmpty);
-    expect(
-        products
-            .every((product) => product.minimumOrder > 0 && product.price > 0),
-        isTrue);
+  test('development catalog has products and active locations', () async {
+    final repository = DemoCatalogRepository();
+    expect(await repository.popularProducts(), isNotEmpty);
+    expect(await repository.activeLocations(), isNotEmpty);
   });
 }

@@ -34,6 +34,24 @@ class AppLocalizations {
       locale.languageCode == 'ta' ? 'வகைப்படி வாங்குங்கள்' : 'Shop by Category';
   String get popularMaterials =>
       locale.languageCode == 'ta' ? 'பிரபலமான பொருட்கள்' : 'Popular Materials';
+  bool get isTamil => locale.languageCode == 'ta';
+  String get selectLocation =>
+      isTamil ? 'இடத்தைத் தேர்ந்தெடுக்கவும்' : 'Select location';
+  String get currentLocation => isTamil ? 'தற்போதைய இடம்' : 'Current location';
+  String get noProducts =>
+      isTamil ? 'பொருட்கள் எதுவும் இல்லை' : 'No products found';
+  String get noCategories =>
+      isTamil ? 'வகைகள் எதுவும் இல்லை' : 'No categories available';
+  String get priceOnRequest =>
+      isTamil ? 'விலை விசாரிக்கவும்' : 'Price on request';
+  String get minimumOrder => isTamil ? 'குறைந்தபட்ச ஆர்டர்' : 'Minimum order';
+  String get contactBm => isTamil ? 'BM-ஐ தொடர்பு கொள்ளவும்' : 'Contact BM';
+  String get loading => isTamil ? 'ஏற்றுகிறது' : 'Loading';
+  String get tryAgain => isTamil ? 'மீண்டும் முயற்சிக்கவும்' : 'Try again';
+  String get available => isTamil ? 'கிடைக்கிறது' : 'Available';
+  String get lowStock => isTamil ? 'குறைந்த இருப்பு' : 'Low stock';
+  String get outOfStock => isTamil ? 'இருப்பு இல்லை' : 'Out of stock';
+  String get comingSoon => isTamil ? 'விரைவில் வருகிறது' : 'Coming soon';
 }
 
 class _AppLocalizationsDelegate
