@@ -2,6 +2,8 @@
 
 BM is a Flutter customer app foundation for purchasing and enquiring about construction materials. It supports English and Tamil, an onboarding flow, phone OTP authentication boundaries, location-aware product abstractions, and a lightweight marketplace home experience.
 
+The current UI release applies the approved warm-white/peach/orange BM visual system across the customer and admin experiences. It includes original BM SVG branding, a locally bundled construction-material hero, persisted language and onboarding choices, responsive catalog/search/detail flows, wishlist and address preferences, customer support/profile surfaces, and a responsive admin shell. Trusted Firebase repositories and callable order/admin operations remain the data authority; development preview content is used only when Firebase is not configured.
+
 ## Milestone status
 
 Implemented: project structure, Material 3 design system, routing, English/Tamil localization, splash/onboarding, login and OTP UI, Firebase Auth service boundary, role-safe user model, environment placeholders, home navigation, sample repository abstraction, and starter tests.
@@ -23,6 +25,7 @@ Milestone 5 adds a durable operational outbox: FCM device-token registration, to
 - `lib/services` — external platform/service boundaries
 - `functions` — Firebase callable backend for trusted order creation
 - `lib/l10n` — English and Tamil message catalogues
+- `assets` — original BM branding and locally bundled approved artwork
 - `docs` — architecture and setup decisions
 - `test` — fast behavioural/widget coverage
 
@@ -39,9 +42,10 @@ Milestone 5 adds a durable operational outbox: FCM device-token registration, to
 ## Checks
 
 ```powershell
-flutter format .
+dart format .
 flutter analyze
 flutter test
+flutter build apk --debug
 ```
 
 ```powershell
@@ -50,6 +54,8 @@ npm run build
 ```
 
 See [docs/setup.md](docs/setup.md), [docs/architecture.md](docs/architecture.md), [docs/database.md](docs/database.md), [docs/security.md](docs/security.md), [docs/admin-guide.md](docs/admin-guide.md), [docs/notifications.md](docs/notifications.md), and [docs/reporting.md](docs/reporting.md).
+
+The screen/route inventory, responsive behavior and deliberate demo boundaries are documented in [docs/ui-implementation.md](docs/ui-implementation.md). Artwork provenance is in [ASSET_SOURCES.md](ASSET_SOURCES.md).
 
 Before client testing, read [docs/phase-5-5-verification.md](docs/phase-5-5-verification.md), [docs/client-review-checklist.md](docs/client-review-checklist.md), and [docs/real-device-test-checklist.md](docs/real-device-test-checklist.md). The project is not production-ready until development Firebase/device verification is complete.
 

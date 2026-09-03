@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import 'dart:async';
 
 import '../../l10n/app_localizations.dart';
+import '../../core/widgets/bm_components.dart';
 import '../../models/cart.dart';
 import '../catalog/catalog_providers.dart';
 import 'cart_notifier.dart';
@@ -216,21 +217,10 @@ class _ProductImage extends StatelessWidget {
   const _ProductImage({this.url});
   final String? url;
   @override
-  Widget build(BuildContext context) => ClipRRect(
-        borderRadius: BorderRadius.circular(8),
-        child: url == null
-            ? Container(
-                width: 64,
-                height: 64,
-                color: Theme.of(context).colorScheme.surfaceContainerHighest,
-                child: const Icon(Icons.inventory_2_outlined),
-              )
-            : Image.network(url!,
-                width: 64,
-                height: 64,
-                fit: BoxFit.cover,
-                errorBuilder: (_, __, ___) =>
-                    const Icon(Icons.broken_image_outlined)),
+  Widget build(BuildContext context) => SizedBox(
+        width: 64,
+        height: 64,
+        child: BmImage(source: url, borderRadius: 8),
       );
 }
 

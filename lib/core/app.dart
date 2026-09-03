@@ -5,6 +5,7 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import '../features/notifications/notification_providers.dart';
 import '../l10n/app_localizations.dart';
 import 'router/app_router.dart';
+import 'state/app_preferences.dart';
 import 'theme/bm_theme.dart';
 
 final GlobalKey<ScaffoldMessengerState> bmScaffoldMessengerKey =
@@ -42,10 +43,12 @@ class _BmAppState extends ConsumerState<_BmAppRoot> {
 
   @override
   Widget build(BuildContext context) {
+    final preferences = ref.watch(appPreferencesProvider);
     return MaterialApp.router(
       title: 'BM',
       debugShowCheckedModeBanner: false,
       theme: BmTheme.light,
+      locale: preferences.locale,
       routerConfig: appRouter,
       scaffoldMessengerKey: bmScaffoldMessengerKey,
       supportedLocales: AppLocalizations.supportedLocales,

@@ -212,6 +212,12 @@ class OrderDetailBody extends StatelessWidget {
       if (order.customerNote?.isNotEmpty == true)
         Text('${t.orderNote}: ${order.customerNote}'),
       const SizedBox(height: 16),
+      OutlinedButton.icon(
+        onPressed: () => context.push('/orders/${order.id}/tracking'),
+        icon: const Icon(Icons.local_shipping_outlined),
+        label: Text(t.orderTracking),
+      ),
+      const SizedBox(height: 10),
       const ContactBmButton(),
     ]);
   }

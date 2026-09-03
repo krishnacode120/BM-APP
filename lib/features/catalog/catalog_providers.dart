@@ -34,6 +34,9 @@ final popularProductsProvider = FutureProvider<List<Product>>(
 final productsProvider = FutureProvider.family<List<Product>, String?>(
     (ref, categoryId) =>
         ref.watch(productRepositoryProvider).products(categoryId: categoryId));
+final searchProductsProvider = FutureProvider.family<List<Product>, String>(
+    (ref, query) =>
+        ref.watch(productRepositoryProvider).products(query: query));
 final productProvider = FutureProvider.family<Product?, String>(
     (ref, id) => ref.watch(productRepositoryProvider).byId(id));
 final productPriceProvider = FutureProvider.family<ProductPrice?,

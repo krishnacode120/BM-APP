@@ -9,6 +9,8 @@ class AppLocalizations {
 
   static AppLocalizations of(BuildContext context) =>
       Localizations.of<AppLocalizations>(context, AppLocalizations)!;
+  static AppLocalizations? maybeOf(BuildContext context) =>
+      Localizations.of<AppLocalizations>(context, AppLocalizations);
 
   String get language => locale.languageCode == 'ta' ? 'மொழி' : 'Language';
   String get continueText =>
@@ -35,6 +37,187 @@ class AppLocalizations {
   String get popularMaterials =>
       locale.languageCode == 'ta' ? 'பிரபலமான பொருட்கள்' : 'Popular Materials';
   bool get isTamil => locale.languageCode == 'ta';
+  String get appTagline => isTamil
+      ? 'கட்டுமானப் பொருட்கள். நேர்மையான விலை. நம்பகமான விநியோகம்.'
+      : 'Construction materials. Fair prices. Reliable delivery.';
+  String get chooseLanguage =>
+      isTamil ? 'உங்கள் மொழியைத் தேர்ந்தெடுக்கவும்' : 'Choose your language';
+  String get languageHelp => isTamil
+      ? 'பயன்பாட்டை எந்த மொழியில் பயன்படுத்த விரும்புகிறீர்கள்?'
+      : 'Which language would you like to use?';
+  String get english => 'English';
+  String get tamil => 'தமிழ்';
+  String get skip => isTamil ? 'தவிர்க்கவும்' : 'Skip';
+  String get next => isTamil ? 'அடுத்து' : 'Next';
+  String get welcome => isTamil ? 'மீண்டும் வரவேற்கிறோம்' : 'Welcome back';
+  String get welcomeSubtitle => isTamil
+      ? 'BM மூலம் உங்கள் கட்டுமானத்தை எளிதாகத் தொடங்குங்கள்.'
+      : 'Build easier with trusted materials from BM.';
+  String get onboardingFindTitle =>
+      isTamil ? 'தேவையான பொருளை கண்டறியுங்கள்' : 'Everything your site needs';
+  String get onboardingFindBody => isTamil
+      ? 'செங்கல் முதல் ஸ்டீல் வரை தரமான பொருட்களை ஒரே இடத்தில் பாருங்கள்.'
+      : 'Browse trusted bricks, cement, sand, steel and more in one place.';
+  String get onboardingPriceTitle =>
+      isTamil ? 'உங்கள் இடத்திற்கான விலை' : 'Fair local pricing';
+  String get onboardingPriceBody => isTamil
+      ? 'நீங்கள் தேர்ந்தெடுத்த இடத்திற்கான தற்போதைய விலையை அறியுங்கள்.'
+      : 'See the applicable price for your selected delivery location.';
+  String get onboardingTrackTitle =>
+      isTamil ? 'ஆர்டரை எளிதாகக் கண்காணியுங்கள்' : 'Order with confidence';
+  String get onboardingTrackBody => isTamil
+      ? 'பாதுகாப்பாக ஆர்டர் செய்து ஒவ்வொரு நிலையையும் கண்காணியுங்கள்.'
+      : 'Place secure orders and follow every delivery milestone.';
+  String get unableToLoadMaterials => isTamil
+      ? 'பொருட்களை இப்போது ஏற்ற முடியவில்லை.'
+      : 'Unable to load materials right now.';
+  String get locationLoadError =>
+      isTamil ? 'இடங்களை ஏற்ற முடியவில்லை' : 'Unable to load locations';
+  String get search => isTamil ? 'தேடல்' : 'Search';
+  String get categories => isTamil ? 'வகைகள்' : 'Categories';
+  String get wishlist => isTamil ? 'விருப்பப் பட்டியல்' : 'Wishlist';
+  String get settings => isTamil ? 'அமைப்புகள்' : 'Settings';
+  String get addresses => isTamil ? 'சேமித்த முகவரிகள்' : 'Saved Addresses';
+  String get support => isTamil ? 'உதவி மற்றும் ஆதரவு' : 'Help & Support';
+  String get about => isTamil ? 'BM பற்றி' : 'About BM';
+  String get logout => isTamil ? 'வெளியேறு' : 'Log out';
+  String get viewAll => isTamil ? 'அனைத்தும்' : 'View all';
+  String get todayQuestion => isTamil
+      ? 'இன்று உங்கள் கட்டுமானத்திற்கு என்ன தேவை?'
+      : 'What do you need for your construction today?';
+  String get featuredDeal => isTamil
+      ? 'உங்கள் கட்டுமானத்தை வலுப்படுத்துங்கள்'
+      : 'Build stronger with BM';
+  String get featuredDealBody => isTamil
+      ? 'தரமான பொருட்கள், சரியான விலை, நம்பகமான விநியோகம்.'
+      : 'Quality materials, local prices and reliable delivery.';
+  String get shopNow => isTamil ? 'இப்போது வாங்குங்கள்' : 'Shop now';
+  String get allMaterials => isTamil ? 'அனைத்து பொருட்கள்' : 'All Materials';
+  String get productDetails => isTamil ? 'பொருள் விவரங்கள்' : 'Product Details';
+  String get description => isTamil ? 'விளக்கம்' : 'Description';
+  String get specifications => isTamil ? 'விவரக்குறிப்புகள்' : 'Specifications';
+  String get quantity => isTamil ? 'அளவு' : 'Quantity';
+  String get addToCart => isTamil ? 'கூடையில் சேர்க்கவும்' : 'Add to Cart';
+  String get addedToCart =>
+      isTamil ? 'கூடையில் சேர்க்கப்பட்டது' : 'Added to cart';
+  String get total => isTamil ? 'மொத்தம்' : 'Total';
+  String get noWishlist =>
+      isTamil ? 'விருப்பப் பட்டியல் காலியாக உள்ளது' : 'Your wishlist is empty';
+  String get noWishlistBody => isTamil
+      ? 'பின்னர் பார்க்க விரும்பும் பொருட்களை சேமிக்கவும்.'
+      : 'Save materials you want to come back to.';
+  String get startShopping =>
+      isTamil ? 'வாங்கத் தொடங்குங்கள்' : 'Start shopping';
+  String get recentSearches =>
+      isTamil ? 'சமீபத்திய தேடல்கள்' : 'Recent searches';
+  String get clear => isTamil ? 'அழிக்கவும்' : 'Clear';
+  String get noSearchResults =>
+      isTamil ? 'பொருத்தமான பொருட்கள் இல்லை' : 'No matching materials';
+  String get tryAnotherSearch => isTamil
+      ? 'வேறு பெயர் அல்லது வகையைத் தேடுங்கள்.'
+      : 'Try another material, brand or category.';
+  String get account => isTamil ? 'என் கணக்கு' : 'My Account';
+  String get orderTracking => isTamil ? 'ஆர்டர் கண்காணிப்பு' : 'Order Tracking';
+  String get save => isTamil ? 'சேமிக்கவும்' : 'Save';
+  String get addAddress => isTamil ? 'முகவரியைச் சேர்க்கவும்' : 'Add Address';
+  String get addressName => isTamil ? 'முகவரி பெயர்' : 'Address name';
+  String get addressDetails => isTamil ? 'முழு முகவரி' : 'Full address';
+  String get faq => isTamil ? 'அடிக்கடி கேட்கப்படும் கேள்விகள்' : 'FAQs';
+  String get supportChat => isTamil ? 'ஆதரவு அரட்டை' : 'Support Chat';
+  String get supportChatDemo => isTamil
+      ? 'இது ஒரு மாதிரி ஆதரவு அனுபவம். உடனடி உதவிக்கு BM-ஐ அழைக்கவும்.'
+      : 'This is a demo support experience. Call BM for immediate help.';
+  String get notificationCenter =>
+      isTamil ? 'அறிவிப்பு மையம்' : 'Notification Center';
+  String get orderConfirmed =>
+      isTamil ? 'ஆர்டர் உறுதிப்படுத்தப்பட்டது' : 'Order confirmed';
+  String get orderConfirmedBody => isTamil
+      ? 'உங்கள் ஆர்டர் பெறப்பட்டது. நிலை மாறும்போது தெரிவிப்போம்.'
+      : 'We received your order and will notify you when its status changes.';
+  String get admin => isTamil ? 'நிர்வாகம்' : 'Admin';
+  String get adminDashboard =>
+      isTamil ? 'நிர்வாக டாஷ்போர்டு' : 'Admin Dashboard';
+  String get delivery => isTamil ? 'விநியோகம்' : 'Delivery';
+  String get approvals => isTamil ? 'ஒப்புதல்கள்' : 'Approvals';
+  String get reports => isTamil ? 'அறிக்கைகள்' : 'Reports';
+  String get users => isTamil ? 'பயனர்கள்' : 'Users';
+  String get products => isTamil ? 'பொருட்கள்' : 'Products';
+  String get dashboard => isTamil ? 'டாஷ்போர்டு' : 'Dashboard';
+  String get email => isTamil ? 'மின்னஞ்சல்' : 'Email';
+  String get password => isTamil ? 'கடவுச்சொல்' : 'Password';
+  String get audit => isTamil ? 'தணிக்கை' : 'Audit';
+  String get deliveryIntegrationPending => isTamil
+      ? 'விநியோக ஒதுக்கீடு அடுத்த பாதுகாப்பான backend இணைப்புக்குத் தயாராக உள்ளது.'
+      : 'Delivery assignment is prepared for the next trusted backend integration.';
+  String get noPendingApprovals => isTamil
+      ? 'தற்போது நிலுவையில் உள்ள ஒப்புதல்கள் இல்லை.'
+      : 'There are no pending approvals right now.';
+  String get adminDenied => isTamil
+      ? 'BM நிர்வாகத்தை அணுக உங்களுக்கு அனுமதி இல்லை.'
+      : 'You are not authorized to access BM Admin.';
+  String get unableDashboard =>
+      isTamil ? 'டாஷ்போர்டை ஏற்ற முடியவில்லை' : 'Unable to load dashboard';
+  String get unableOrder =>
+      isTamil ? 'ஆர்டரை ஏற்ற முடியவில்லை' : 'Unable to load order';
+  String get unableOrders =>
+      isTamil ? 'ஆர்டர்களை ஏற்ற முடியவில்லை' : 'Unable to load orders';
+  String get unableProducts =>
+      isTamil ? 'பொருட்களை ஏற்ற முடியவில்லை' : 'Unable to load products';
+  String get unableCategories =>
+      isTamil ? 'வகைகளை ஏற்ற முடியவில்லை' : 'Unable to load categories';
+  String get unableUsers =>
+      isTamil ? 'பயனர்களை ஏற்ற முடியவில்லை' : 'Unable to load users';
+  String get unableAudit => isTamil
+      ? 'தணிக்கை பதிவுகளை ஏற்ற முடியவில்லை'
+      : 'Unable to load audit logs';
+  String get unableSync => isTamil
+      ? 'ஒத்திசைவு நிலையை ஏற்ற முடியவில்லை'
+      : 'Unable to load sync status';
+  String get ordersToday => isTamil ? 'இன்றைய ஆர்டர்கள்' : 'Orders Today';
+  String get pending => isTamil ? 'நிலுவை' : 'Pending';
+  String get processing => isTamil ? 'செயல்பாட்டில்' : 'Processing';
+  String get delivered => isTamil ? 'வழங்கப்பட்டது' : 'Delivered';
+  String get recentOrders => isTamil ? 'சமீபத்திய ஆர்டர்கள்' : 'Recent Orders';
+  String get orderNotFound =>
+      isTamil ? 'ஆர்டர் கிடைக்கவில்லை' : 'Order not found';
+  String get status => isTamil ? 'நிலை' : 'Status';
+  String get payment => isTamil ? 'பணம்' : 'Payment';
+  String get location => isTamil ? 'இடம்' : 'Location';
+  String get all => isTamil ? 'அனைத்தும்' : 'All';
+  String get addProduct => isTamil ? 'பொருளைச் சேர்க்கவும்' : 'Add Product';
+  String get trustedCatalogNotice => isTamil
+      ? 'பொருள் உருவாக்கம் பாதுகாப்பான நிர்வாக backend மூலம் மட்டுமே செய்யப்படும்.'
+      : 'Product creation is available only through the trusted admin backend.';
+  String get sortOrder => isTamil ? 'வரிசை' : 'Sort';
+  String get auditLogs => isTamil ? 'தணிக்கை பதிவுகள்' : 'Audit Logs';
+  String get reportsAndSync =>
+      isTamil ? 'அறிக்கைகள் மற்றும் ஒத்திசைவு' : 'Reports & Sync';
+  String get csvCopied => isTamil
+      ? 'ஆர்டர் CSV நகலெடுக்கப்பட்டது.'
+      : 'Orders CSV copied to clipboard.';
+  String get csvError => isTamil
+      ? 'CSV ஏற்றுமதியை உருவாக்க முடியவில்லை.'
+      : 'Unable to create CSV export.';
+  String get copyOrdersCsv =>
+      isTamil ? 'ஆர்டர் CSV-ஐ நகலெடுக்கவும்' : 'Copy Orders CSV';
+  String get totalOrders => isTamil ? 'மொத்த ஆர்டர்கள்' : 'Total Orders';
+  String get synced => isTamil ? 'ஒத்திசைக்கப்பட்டது' : 'Synced';
+  String get failed => isTamil ? 'தோல்வி' : 'Failed';
+  String get reportingSync => isTamil ? 'அறிக்கை ஒத்திசைவு' : 'Reporting sync';
+  String get reportingSourceTruth => isTamil
+      ? 'Firestore முதன்மை தரவு மூலம். Excel சிறிது தாமதமாக புதுப்பிக்கப்படலாம்.'
+      : 'Firestore is the source of truth. Excel may update after a short delay.';
+  String get retrySync => isTamil ? 'மீண்டும் ஒத்திசைக்கவும்' : 'Retry sync';
+  String get settingsFoundation => isTamil
+      ? 'வணிக தொலைபேசி, WhatsApp, ஆதரவு மின்னஞ்சல், நாணயம் மற்றும் பராமரிப்பு முறை அமைப்புகள்.'
+      : 'Business settings foundation: business phone, WhatsApp, support email, currency and maintenance mode.';
+  String inventoryLabel(String value) => switch (value) {
+        'available' => available,
+        'lowStock' => lowStock,
+        'outOfStock' => outOfStock,
+        'comingSoon' => comingSoon,
+        _ => isTamil ? 'மறைக்கப்பட்டது' : 'Hidden',
+      };
   String get selectLocation =>
       isTamil ? 'இடத்தைத் தேர்ந்தெடுக்கவும்' : 'Select location';
   String get currentLocation => isTamil ? 'தற்போதைய இடம்' : 'Current location';

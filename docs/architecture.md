@@ -18,6 +18,16 @@ Milestone 4 admin flow:
 
 Admin UI currently lives in the same Flutter project to share models and repositories, but it is separated under `lib/features/admin`.
 
+## UI and preference boundaries
+
+`AppPreferencesController` owns the persisted locale and onboarding completion flags. `MaterialApp.router` watches this state, so English/Tamil changes rebuild all localized surfaces without a second state-management system. Reusable presentation primitives live under `lib/core/widgets`; they have no Firestore dependency.
+
+The customer UI continues to follow `Widget -> Riverpod provider/notifier -> repository -> Firebase` for catalog, prices, orders and admin operations. The no-Firebase preview selects `DemoCatalogRepository` at the repository boundary. It never impersonates production writes: phone auth and trusted order submission remain unavailable until development Firebase is configured.
+
+Wishlist, recent searches and saved addresses are device preferences. They are explicitly non-authoritative conveniences and may later move behind authenticated profile repositories. Cart state remains handled by the existing `CartNotifier`; order creation remains server-authoritative.
+
+The admin login uses Firebase email/password only, followed by the existing custom-claim gate. A successful Firebase sign-in does not grant admin access without an admin claim.
+
 Milestone 5 operational flow:
 
 `createOrder` / trusted admin mutation -> same Firestore transaction writes business record + `notificationJobs`/`reportSyncJobs` outbox record -> Firestore worker or scheduled retry claims a leased job -> FCM or Microsoft Graph -> safe operational status/log.
