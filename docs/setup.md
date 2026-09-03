@@ -7,3 +7,18 @@ Enable Phone Authentication, add Android SHA-1/SHA-256 values, configure APNs fo
 For Milestone 3 order testing, configure Firebase Auth, Firestore, and Cloud Functions in a development project or emulator suite. Install backend dependencies from `functions/` with `npm install`, compile with `npm run build`, and deploy only to development until the flow is verified.
 
 The local catalog fallback remains available without Firebase, but order submission intentionally returns a Firebase configuration error instead of creating a fake local order.
+
+Run Firestore rules tests with:
+
+```powershell
+npx firebase-tools emulators:exec --only firestore "cd functions && npm run test:rules"
+```
+
+Bootstrap the first admin from a trusted machine/environment only:
+
+```powershell
+cd functions
+node scripts/bootstrap-admin.js <firebase-auth-uid>
+```
+
+This requires Admin SDK credentials or a trusted Firebase environment. Never commit service-account JSON.

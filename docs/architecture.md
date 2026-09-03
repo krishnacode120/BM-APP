@@ -11,3 +11,9 @@ Flutter cart UI -> `CartNotifier` -> `CartPricingService` -> checkout -> `OrderR
 The Flutter client may show estimated totals for UX, but it is not authoritative for final order validity or pricing. The Cloud Function derives `request.auth.uid`, reloads product/location/price documents, validates inventory and minimum quantities, creates immutable order item/customer/location snapshots, records an idempotency result, and returns the created order.
 
 Admin access is never determined by UI routing alone. Firebase custom claims and Firestore security rules will enforce roles, while the app only renders role-appropriate navigation.
+
+Milestone 4 admin flow:
+
+`/admin` -> `AdminGatePage` -> Firebase ID token claim refresh -> `AdminShell`. Admin reads are scoped through `AdminRepository`; sensitive writes use callable functions such as `updateOrderStatus`, `updatePaymentStatus`, `updateInventoryStatus`, `setProductPrice`, and `setAdminRole`. The backend validates admin claims, state transitions, financial values, inventory states and price-history rollover before writing Firestore and audit logs.
+
+Admin UI currently lives in the same Flutter project to share models and repositories, but it is separated under `lib/features/admin`.

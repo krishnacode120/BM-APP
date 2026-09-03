@@ -1,5 +1,6 @@
 import 'package:go_router/go_router.dart';
 
+import '../../features/admin/admin_pages.dart';
 import '../../features/auth/login_page.dart';
 import '../../features/cart/cart_pages.dart';
 import '../../features/auth/otp_page.dart';
@@ -20,6 +21,7 @@ final GoRouter appRouter = GoRouter(
         path: '/otp',
         builder: (_, state) => OtpPage(phone: state.extra! as String)),
     GoRoute(path: '/home', builder: (_, __) => const HomeShell()),
+    GoRoute(path: '/admin', builder: (_, __) => const AdminGatePage()),
     GoRoute(path: '/cart', builder: (_, __) => const CartPage()),
     GoRoute(path: '/checkout', builder: (_, __) => const CheckoutPage()),
     GoRoute(path: '/orders', builder: (_, __) => const OrderHistoryPage()),

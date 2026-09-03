@@ -13,9 +13,18 @@ Milestone 3 order queries:
 - `orderRequests/{userId}_{idempotencyKey}` is backend-only and stores the successful `orderId` for safe retries.
 - `counters/orders.next` is backend-only and used inside a transaction to generate customer-friendly numbers such as `BM10001`.
 
+Milestone 4 adds:
+
+- `auditLogs` append-only backend events for order, catalog, inventory, pricing and admin actions.
+- `settings` business-settings foundation for non-secret operational values.
+- Product media references continue to live on product documents; binaries belong in Firebase Storage under `products/{productId}/...`.
+
+Price updates preserve history by expiring active `productPrices` documents with `effectiveTo` and creating a new active document. Historical orders keep their original `priceAtOrder`.
+
 Required indexes:
 
 - `orders(userId ASC, createdAt DESC)`
+- `orders(orderStatus ASC, createdAt DESC)`
 - `productPrices(productId ASC, locationId ASC, effectiveFrom DESC)`
 - `products(isActive ASC, stockStatus ASC, isPopular ASC)`
 - `products(isActive ASC, stockStatus ASC, categoryId ASC)`

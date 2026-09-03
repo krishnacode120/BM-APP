@@ -8,7 +8,9 @@ Implemented: project structure, Material 3 design system, routing, English/Tamil
 
 Milestone 2 adds Firestore-backed category, product, location and pricing repository contracts; location preference persistence; inventory-aware product display; category/product detail routes; and development seed records.
 
-Milestone 3 adds a real cart, user-scoped local cart persistence, checkout, order success, order history/detail screens, immutable order snapshots, and a callable Cloud Function (`createOrder`) for server-authoritative order creation. The client sends only product IDs, quantities, delivery/customer details, and an idempotency key; the backend derives the authenticated user, resolves current prices, validates inventory/minimum quantities/location, generates the order number, and writes the order. Firebase project credentials, real OTP execution, admin portal, FCM, and Excel synchronization remain pending. The app intentionally never claims Firebase order submission is available when platform configuration is absent.
+Milestone 3 adds a real cart, user-scoped local cart persistence, checkout, order success, order history/detail screens, immutable order snapshots, and a callable Cloud Function (`createOrder`) for server-authoritative order creation. The client sends only product IDs, quantities, delivery/customer details, and an idempotency key; the backend derives the authenticated user, resolves current prices, validates inventory/minimum quantities/location, generates the order number, and writes the order.
+
+Milestone 4 adds a separated `/admin` experience, admin-claim route guard, dashboard, order operations, product/inventory/category/users/audit/settings foundations, trusted admin callable functions, admin bootstrap script, Firebase Storage product-media rules, and Firestore emulator rule tests. Firebase project credentials, real OTP execution, full image upload UI, FCM, and Excel synchronization remain pending. The app intentionally never claims Firebase order submission or admin operations are available when platform configuration is absent.
 
 ## Structure
 
@@ -45,6 +47,6 @@ cd functions
 npm run build
 ```
 
-See [docs/setup.md](docs/setup.md), [docs/architecture.md](docs/architecture.md), [docs/database.md](docs/database.md), and [docs/security.md](docs/security.md).
+See [docs/setup.md](docs/setup.md), [docs/architecture.md](docs/architecture.md), [docs/database.md](docs/database.md), [docs/security.md](docs/security.md), and [docs/admin-guide.md](docs/admin-guide.md).
 
 The repository includes deliberately restrictive Firebase rules as a deployment-safe baseline. Expand them alongside the trusted Cloud Functions used for product, order and admin workflows; do not deploy permissive rules for development convenience.
