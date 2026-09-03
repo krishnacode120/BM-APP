@@ -36,6 +36,9 @@ describe("firestore security rules", () => {
       await db.collection("categories").doc("category-a").set({isActive: true});
       await db.collection("productPrices").doc("price-a").set({price: 8});
       await db.collection("auditLogs").doc("audit-a").set({action: "PRICE_CHANGED"});
+      await db.collection("users").doc("user-a").collection("devices").doc("device-a").set({token: "secret-token", enabled: true});
+      await db.collection("notificationJobs").doc("job-a").set({status: "PENDING"});
+      await db.collection("reportSyncJobs").doc("order-a").set({status: "PENDING"});
     });
   });
 
@@ -66,5 +69,17 @@ describe("firestore security rules", () => {
     await assertFails(anon.collection("orders").doc("order-a").get());
     await assertFails(anon.collection("auditLogs").doc("audit-a").get());
     assert.ok(true);
+  });
+
+  it("keeps device tokens and system jobs backend-only", async () => {
+    const userA = testEnv.authenticatedContext("user-a").firestore();
+    const adminDb = testEnv.authenticatedContext("admin-a", {admin: true}).firestore();
+    await assertFails(userA.collection("users").doc("user-a").collection("devices").doc("device-a").get());
+    await assertFails(userA.collection("notificationJobs").doc("job-a").get());
+    await assertFails(userA.collection("notificationJobs").doc("job-a").update({status: "COMPLETED"}));
+    await assertFails(userA.collection("reportSyncJobs").doc("order-a").get());
+    await assertFails(userA.collection("reportSyncJobs").doc("order-a").update({status: "COMPLETED"}));
+    await assertSucceeds(adminDb.collection("notificationJobs").doc("job-a").get());
+    await assertSucceeds(adminDb.collection("reportSyncJobs").doc("order-a").get());
   });
 });

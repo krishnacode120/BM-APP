@@ -1,8 +1,38 @@
 import * as admin from "firebase-admin";
+import {defineSecret} from "firebase-functions/params";
+import {onDocumentWritten} from "firebase-functions/v2/firestore";
 import {HttpsError, onCall} from "firebase-functions/v2/https";
+import {onSchedule} from "firebase-functions/v2/scheduler";
+import {
+  enqueueLowStockNotification,
+  enqueueOrderNotification,
+  enqueueOrderReportSync,
+  notificationEventForStatus,
+  processDueOperationalJobs,
+  processNotificationJob,
+  processReportSyncJob,
+  type NotificationEvent,
+  type ReportEvent,
+} from "./operational";
 
 admin.initializeApp();
 const db = admin.firestore();
+const microsoftTenantId = defineSecret("MICROSOFT_TENANT_ID");
+const microsoftClientId = defineSecret("MICROSOFT_CLIENT_ID");
+const microsoftClientSecret = defineSecret("MICROSOFT_CLIENT_SECRET");
+const microsoftDriveId = defineSecret("MICROSOFT_DRIVE_ID");
+const microsoftWorkbookItemId = defineSecret("MICROSOFT_WORKBOOK_ITEM_ID");
+const microsoftOrdersTable = defineSecret("MICROSOFT_ORDERS_TABLE");
+const microsoftOrderItemsTable = defineSecret("MICROSOFT_ORDER_ITEMS_TABLE");
+const graphSecrets = [
+  microsoftTenantId,
+  microsoftClientId,
+  microsoftClientSecret,
+  microsoftDriveId,
+  microsoftWorkbookItemId,
+  microsoftOrdersTable,
+  microsoftOrderItemsTable,
+];
 
 type OrderRequestItem = {
   productId: string;
@@ -150,7 +180,13 @@ export const createOrder = onCall(async (request) => {
       orderId: orderRef.id,
       createdAt: now,
     });
-    return {order: withId(orderRef.id, order)};
+    const persistedOrder = withId(orderRef.id, order);
+    // The order and its operational outbox records commit together. Delivery of
+    // push/reporting side effects is deliberately handled after this transaction.
+    enqueueOrderNotification(tx, db, persistedOrder, "ORDER_CREATED", now);
+    enqueueOrderNotification(tx, db, persistedOrder, "NEW_ORDER", now);
+    enqueueOrderReportSync(tx, db, orderRef.id, "ORDER_CREATED", now, order.orderNumber);
+    return {order: persistedOrder};
   });
 });
 
@@ -176,7 +212,7 @@ export const updateOrderStatus = onCall(async (request) => {
       oldValue: {orderStatus: previous},
       newValue: {orderStatus: nextStatus},
     };
-  });
+  }, {notification: notificationEventForStatus(nextStatus), report: "ORDER_STATUS_CHANGED"});
 });
 
 export const updatePaymentStatus = onCall(async (request) => {
@@ -197,7 +233,10 @@ export const updatePaymentStatus = onCall(async (request) => {
     },
     oldValue: {paymentStatus: current.paymentStatus ?? null},
     newValue: {paymentStatus},
-  }));
+  }), {
+    notification: paymentStatus === "verified" ? "PAYMENT_VERIFIED" : null,
+    report: "PAYMENT_STATUS_CHANGED",
+  });
 });
 
 export const updateAdminNote = onCall(async (request) => {
@@ -239,7 +278,7 @@ export const updateOrderFinancials = onCall(async (request) => {
       finalTotal: current.finalTotal ?? null,
     },
     newValue: {confirmedSubtotal, deliveryCharge, finalTotal: confirmedSubtotal + deliveryCharge},
-  }));
+  }), {report: "ORDER_FINANCIALS_CHANGED"});
 });
 
 export const upsertProduct = onCall(async (request) => {
@@ -301,10 +340,15 @@ export const updateInventoryStatus = onCall(async (request) => {
     updatedAt: admin.firestore.FieldValue.serverTimestamp(),
     updatedBy: adminUid,
   };
-  await ref.update(updates);
-  await writeAudit(adminUid, "INVENTORY_CHANGED", "product", productId,
+  const batch = db.batch();
+  batch.update(ref, updates);
+  batch.set(db.collection("auditLogs").doc(), auditData(adminUid, "INVENTORY_CHANGED", "product", productId,
     {stockStatus: before.get("stockStatus"), stockQuantity: before.get("stockQuantity") ?? null},
-    {stockStatus: status, stockQuantity});
+    {stockStatus: status, stockQuantity}));
+  if (status === "lowStock" && before.get("stockStatus") !== "lowStock") {
+    enqueueLowStockNotification(batch, db, productId, String(before.get("name") ?? ""));
+  }
+  await batch.commit();
   return {id: productId};
 });
 
@@ -366,10 +410,156 @@ export const setAdminRole = onCall(async (request) => {
     updatedAt: admin.firestore.FieldValue.serverTimestamp(),
     updatedBy: adminUid,
   }, {merge: true});
+  const devices = await db.collection("users").doc(targetUid).collection("devices").get();
+  if (!devices.empty) {
+    const batch = db.batch();
+    for (const device of devices.docs) {
+      batch.set(device.ref, {
+        role: enabled ? "admin" : "user",
+        ...(enabled ? {} : {enabled: false}),
+        updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+      }, {merge: true});
+    }
+    await batch.commit();
+  }
   await writeAudit(adminUid, enabled ? "ADMIN_CREATED" : "ADMIN_REVOKED",
     "user", targetUid, null, {role: enabled ? "admin" : "user"});
   return {targetUid, role: enabled ? "admin" : "user"};
 });
+
+/** Registers a single physical/browser device under the authenticated owner. */
+export const registerDeviceToken = onCall(async (request) => {
+  const auth = request.auth;
+  const uid = auth?.uid;
+  if (!uid) throw new HttpsError("unauthenticated", "Sign in required.");
+  const data = request.data as Record<string, unknown>;
+  const deviceId = readId(data, "deviceId");
+  const token = String(data.token ?? "").trim();
+  const platform = String(data.platform ?? "").trim();
+  const locale = String(data.locale ?? "en").trim().toLowerCase();
+  if (token.length < 20 || token.length > 4096 || !["android", "ios", "web"].includes(platform)) {
+    throw new HttpsError("invalid-argument", "Invalid device token.");
+  }
+  const isAdmin = auth?.token.admin === true || auth?.token.role === "admin";
+  const now = admin.firestore.FieldValue.serverTimestamp();
+  await db.collection("users").doc(uid).collection("devices").doc(deviceId).set({
+    token,
+    platform,
+    locale: locale.startsWith("ta") ? "ta" : "en",
+    appVersion: String(data.appVersion ?? "").trim().slice(0, 80),
+    role: isAdmin ? "admin" : "user",
+    enabled: true,
+    createdAt: now,
+    updatedAt: now,
+    lastSeenAt: now,
+  }, {merge: true});
+  return {deviceId};
+});
+
+/** Disables the current account/device mapping before logout or account switch. */
+export const deactivateDeviceToken = onCall(async (request) => {
+  const uid = request.auth?.uid;
+  if (!uid) throw new HttpsError("unauthenticated", "Sign in required.");
+  const deviceId = readId(request.data, "deviceId");
+  await db.collection("users").doc(uid).collection("devices").doc(deviceId).set({
+    enabled: false,
+    updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+    lastSeenAt: admin.firestore.FieldValue.serverTimestamp(),
+  }, {merge: true});
+  return {deviceId};
+});
+
+/** Moves a failed/dead-letter reporting job back to the durable queue. */
+export const retryReportSync = onCall(async (request) => {
+  const adminUid = requireAdmin(request.auth);
+  const orderId = readId(request.data, "orderId");
+  const ref = db.collection("reportSyncJobs").doc(orderId);
+  const job = await ref.get();
+  if (!job.exists) throw new HttpsError("not-found", "Report job not found.");
+  const now = admin.firestore.Timestamp.now();
+  await db.runTransaction(async (tx) => {
+    tx.set(ref, {
+      status: "PENDING", attemptCount: 0, nextRetryAt: now, lastError: null,
+      completedAt: null, leaseExpiresAt: null, updatedAt: now,
+    }, {merge: true});
+    tx.create(db.collection("auditLogs").doc(), auditData(adminUid, "REPORT_SYNC_RETRIED",
+      "reportSyncJob", orderId, {status: job.get("status")}, {status: "PENDING"}));
+  });
+  return {orderId};
+});
+
+/** Private CSV fallback for admins when Graph reporting is unavailable. */
+export const exportOrdersCsv = onCall(async (request) => {
+  requireAdmin(request.auth);
+  const data = request.data as Record<string, unknown>;
+  const status = data?.orderStatus == null ? null : String(data.orderStatus).trim();
+  if (status != null && !orderStatuses.has(status)) {
+    throw new HttpsError("invalid-argument", "Invalid order status.");
+  }
+  let query: admin.firestore.Query = db.collection("orders").orderBy("createdAt", "desc").limit(500);
+  if (status) query = db.collection("orders").where("orderStatus", "==", status)
+    .orderBy("createdAt", "desc").limit(500);
+  const snapshot = await query.get();
+  const rows = snapshot.docs.map((doc) => ({id: doc.id, ...doc.data()}));
+  return {
+    filename: `bm-orders-${new Date().toISOString().slice(0, 10)}.csv`,
+    csv: ordersCsv(rows),
+  };
+});
+
+export const processNotificationJobOnWrite = onDocumentWritten(
+  "notificationJobs/{jobId}",
+  async (event) => {
+    if (!event.data?.after.exists) return;
+    await processNotificationJob(db, event.params.jobId);
+  },
+);
+
+export const processReportSyncJobOnWrite = onDocumentWritten({
+  document: "reportSyncJobs/{jobId}",
+  secrets: graphSecrets,
+}, async (event) => {
+  if (!event.data?.after.exists) return;
+  await processReportSyncJob(db, event.params.jobId, graphConfig());
+});
+
+export const processOperationalRetries = onSchedule({
+  schedule: "every 5 minutes",
+  timeZone: "Asia/Kolkata",
+  secrets: graphSecrets,
+}, async () => {
+  await processDueOperationalJobs(db, graphConfig());
+});
+
+function graphConfig() {
+  return {
+    tenantId: microsoftTenantId.value() ?? "",
+    clientId: microsoftClientId.value() ?? "",
+    clientSecret: microsoftClientSecret.value() ?? "",
+    driveId: microsoftDriveId.value() ?? "",
+    workbookItemId: microsoftWorkbookItemId.value() ?? "",
+    ordersTable: microsoftOrdersTable.value() ?? "Orders",
+    orderItemsTable: microsoftOrderItemsTable.value() ?? "OrderItems",
+  };
+}
+
+function ordersCsv(rows: Array<admin.firestore.DocumentData & {id: string}>): string {
+  const headers = ["Order ID", "Order Number", "Created At", "Customer Name", "Phone", "Location", "Items", "Estimated Total", "Final Total", "Payment Status", "Order Status", "Last Updated"];
+  const values = rows.map((order) => [
+    order.id, order.orderNumber, csvDate(order.createdAt), order.customerName, order.phoneNumber,
+    order.locationName, Array.isArray(order.items) ? order.items.map((item: {productName?: string; quantity?: number}) => `${item.productName ?? ""} x${item.quantity ?? 0}`).join("; ") : "",
+    order.estimatedSubtotal, order.finalTotal ?? "", order.paymentStatus, order.orderStatus, csvDate(order.updatedAt),
+  ]);
+  return [headers, ...values].map((row) => row.map(csvCell).join(",")).join("\n");
+}
+
+function csvCell(value: unknown): string {
+  return `"${String(value ?? "").replace(/"/g, '""')}"`;
+}
+
+function csvDate(value: unknown): string {
+  return value instanceof admin.firestore.Timestamp ? value.toDate().toISOString() : String(value ?? "");
+}
 
 function parseRequest(data: unknown): CreateOrderRequest {
   if (!data || typeof data !== "object") {
@@ -458,7 +648,11 @@ async function updateOrderFields(
     updates: admin.firestore.UpdateData<admin.firestore.DocumentData>;
     oldValue: unknown;
     newValue: unknown;
-  }
+  },
+  sideEffects: {
+    notification?: NotificationEvent | null;
+    report?: ReportEvent;
+  } = {},
 ) {
   const ref = db.collection("orders").doc(orderId);
   return db.runTransaction(async (tx) => {
@@ -468,7 +662,20 @@ async function updateOrderFields(
     tx.update(ref, change.updates);
     tx.create(db.collection("auditLogs").doc(),
       auditData(adminUid, action, "order", orderId, change.oldValue, change.newValue));
-    const after = {...doc.data(), ...change.updates, id: orderId};
+    const after: admin.firestore.DocumentData = {
+      ...doc.data(),
+      ...change.updates,
+      id: orderId,
+    };
+    const now = admin.firestore.Timestamp.now();
+    if (sideEffects.notification) {
+      enqueueOrderNotification(tx, db,
+        after as admin.firestore.DocumentData & {id: string}, sideEffects.notification, now);
+    }
+    if (sideEffects.report) {
+      enqueueOrderReportSync(tx, db, orderId, sideEffects.report, now,
+        String(after.orderNumber ?? ""));
+    }
     return {order: after};
   });
 }

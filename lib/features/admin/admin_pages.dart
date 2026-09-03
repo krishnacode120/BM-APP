@@ -1,12 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:flutter/services.dart';
 
 import '../../models/order.dart';
 import '../../models/product.dart';
+import '../../repositories/admin_repository.dart';
 import 'admin_providers.dart';
 
 class AdminGatePage extends ConsumerWidget {
-  const AdminGatePage({super.key});
+  const AdminGatePage({this.orderId, super.key});
+  final String? orderId;
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final access = ref.watch(adminAccessProvider);
@@ -14,7 +17,11 @@ class AdminGatePage extends ConsumerWidget {
       loading: () =>
           const Scaffold(body: Center(child: CircularProgressIndicator())),
       error: (_, __) => const _AdminDenied(),
-      data: (allowed) => allowed ? const AdminShell() : const _AdminDenied(),
+      data: (allowed) => !allowed
+          ? const _AdminDenied()
+          : orderId == null
+              ? const AdminShell()
+              : AdminOrderDetailPage(orderId: orderId!),
     );
   }
 }
@@ -44,6 +51,7 @@ class _AdminShellState extends State<AdminShell> {
       const AdminCategoriesPage(),
       const AdminUsersPage(),
       const AdminAuditPage(),
+      const AdminReportsPage(),
       const AdminSettingsPage(),
     ];
     return Scaffold(
@@ -66,6 +74,8 @@ class _AdminShellState extends State<AdminShell> {
                 icon: Icon(Icons.people_outline), label: Text('Users')),
             NavigationRailDestination(
                 icon: Icon(Icons.history_outlined), label: Text('Audit')),
+            NavigationRailDestination(
+                icon: Icon(Icons.sync_outlined), label: Text('Reports')),
             NavigationRailDestination(
                 icon: Icon(Icons.settings_outlined), label: Text('Settings')),
           ],
@@ -109,6 +119,40 @@ class AdminOrdersPage extends ConsumerStatefulWidget {
   const AdminOrdersPage({super.key});
   @override
   ConsumerState<AdminOrdersPage> createState() => _AdminOrdersPageState();
+}
+
+class AdminOrderDetailPage extends ConsumerWidget {
+  const AdminOrderDetailPage({required this.orderId, super.key});
+  final String orderId;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final order = ref.watch(adminOrderProvider(orderId));
+    return Scaffold(
+      appBar: AppBar(title: const Text('Order details')),
+      body: order.when(
+        loading: () => const Center(child: CircularProgressIndicator()),
+        error: (_, __) => const Center(child: Text('Unable to load order')),
+        data: (value) => value == null
+            ? const Center(child: Text('Order not found'))
+            : ListView(padding: const EdgeInsets.all(24), children: [
+                Text(value.orderNumber,
+                    style: Theme.of(context).textTheme.headlineSmall),
+                const SizedBox(height: 12),
+                Text('Status: ${value.orderStatus.name}'),
+                Text('Payment: ${value.paymentStatus.name}'),
+                Text('Location: ${value.locationName}'),
+                const Divider(height: 32),
+                for (final item in value.items)
+                  ListTile(
+                    title: Text(item.productName),
+                    subtitle: Text('${item.quantity} ${item.unit.name}'),
+                    trailing: Text('₹${item.subtotal}'),
+                  ),
+              ]),
+      ),
+    );
+  }
 }
 
 class _AdminOrdersPageState extends ConsumerState<AdminOrdersPage> {
@@ -311,6 +355,80 @@ class AdminAuditPage extends ConsumerWidget {
               title: Text(log.action),
               subtitle: Text(
                   '${log.entityType}/${log.entityId} · ${log.actorUserId}'),
+            ),
+        ]),
+      ),
+    );
+  }
+}
+
+class AdminReportsPage extends ConsumerWidget {
+  const AdminReportsPage({super.key});
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final reporting = ref.watch(adminReportingProvider);
+    return _AdminPage(
+      title: 'Reports & Sync',
+      action: OutlinedButton.icon(
+        onPressed: () async {
+          try {
+            final csv =
+                await ref.read(adminRepositoryProvider).exportOrdersCsv();
+            await Clipboard.setData(ClipboardData(text: csv));
+            if (context.mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+                  content: Text('Orders CSV copied to clipboard.')));
+            }
+          } on AdminFailure {
+            if (context.mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(const SnackBar(
+                  content: Text('Unable to create CSV export.')));
+            }
+          }
+        },
+        icon: const Icon(Icons.download_outlined),
+        label: const Text('Copy Orders CSV'),
+      ),
+      child: reporting.when(
+        loading: () => const Center(child: CircularProgressIndicator()),
+        error: (_, __) =>
+            const Center(child: Text('Unable to load sync status')),
+        data: (data) => ListView(padding: const EdgeInsets.all(24), children: [
+          Wrap(spacing: 12, runSpacing: 12, children: [
+            _Metric('Total Orders', data.totalOrders),
+            _Metric('Synced', data.synced),
+            _Metric('Pending', data.pending),
+            _Metric('Failed', data.failed),
+          ]),
+          const SizedBox(height: 24),
+          Text('Reporting sync', style: Theme.of(context).textTheme.titleLarge),
+          const SizedBox(height: 8),
+          const Text(
+              'Firestore is the source of truth. Excel may update after a short delay.'),
+          const SizedBox(height: 12),
+          for (final job in data.recentJobs)
+            Card(
+              child: ListTile(
+                leading: Icon(job.needsAttention
+                    ? Icons.error_outline
+                    : Icons.sync_outlined),
+                title: Text(job.orderNumber ?? job.orderId),
+                subtitle: Text(
+                    '${job.status.name} · attempts: ${job.attemptCount}'
+                    '${job.lastError == null ? '' : ' · ${job.lastError}'}'),
+                trailing: job.needsAttention
+                    ? TextButton(
+                        onPressed: () async {
+                          await ref
+                              .read(adminRepositoryProvider)
+                              .retryReportSync(job.orderId);
+                          ref.invalidate(adminReportingProvider);
+                        },
+                        child: const Text('Retry sync'),
+                      )
+                    : null,
+              ),
             ),
         ]),
       ),

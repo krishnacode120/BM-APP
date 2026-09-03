@@ -4,7 +4,7 @@
   "main": "lib/index.js",
   "scripts": {
     "build": "tsc",
-    "test": "npm run build && node lib/index.test.js",
+    "test": "npm run build && node lib/index.test.js && node lib/operational.test.js",
     "test:rules": "mocha test/firestore.rules.test.js"
   },
   "engines": {

@@ -1,6 +1,8 @@
 analyzer:
   exclude:
     - build/**
+    - android/**
+    - ios/**
 include: package:flutter_lints/flutter.yaml
 
 linter:
@@ -8,4 +10,3 @@ linter:
     always_declare_return_types: true
     prefer_single_quotes: true
     unawaited_futures: true
-

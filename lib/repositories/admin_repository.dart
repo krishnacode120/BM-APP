@@ -7,6 +7,7 @@ import '../models/audit_log.dart';
 import '../models/category.dart';
 import '../models/order.dart';
 import '../models/product.dart';
+import '../models/report_sync.dart';
 
 class AdminFailure implements Exception {
   const AdminFailure(this.code);
@@ -55,14 +56,31 @@ class AdminUserSummary {
   }
 }
 
+class AdminReportingSummary {
+  const AdminReportingSummary({
+    required this.totalOrders,
+    required this.synced,
+    required this.pending,
+    required this.failed,
+    required this.recentJobs,
+  });
+  final int totalOrders;
+  final int synced;
+  final int pending;
+  final int failed;
+  final List<ReportSyncJob> recentJobs;
+}
+
 abstract interface class AdminRepository {
   Future<bool> isCurrentUserAdmin();
   Future<AdminDashboard> dashboard();
   Future<List<BmOrder>> orders({String? status});
+  Future<BmOrder?> orderById(String orderId);
   Future<List<AdminUserSummary>> users();
   Future<List<Category>> categories();
   Future<List<Product>> products();
   Future<List<AuditLog>> auditLogs();
+  Future<AdminReportingSummary> reporting();
   Future<void> updateOrderStatus(String orderId, OrderStatus status);
   Future<void> updatePaymentStatus(String orderId, PaymentStatus status);
   Future<void> updateAdminNote(String orderId, String note);
@@ -70,6 +88,8 @@ abstract interface class AdminRepository {
       String productId, InventoryStatus status, int? stockQuantity);
   Future<void> setProductPrice(String productId, String locationId, num price);
   Future<void> setAdminRole(String targetUid, bool enabled);
+  Future<void> retryReportSync(String orderId);
+  Future<String> exportOrdersCsv({String? orderStatus});
 }
 
 class FirebaseAdminRepository implements AdminRepository {
@@ -141,6 +161,13 @@ class FirebaseAdminRepository implements AdminRepository {
   }
 
   @override
+  Future<BmOrder?> orderById(String orderId) async {
+    final document = await db.collection('orders').doc(orderId).get();
+    if (!document.exists) return null;
+    return BmOrder.fromJson(document.data()!, id: document.id);
+  }
+
+  @override
   Future<List<AdminUserSummary>> users() async =>
       (await db.collection('users').orderBy('phoneNumber').limit(50).get())
           .docs
@@ -170,6 +197,41 @@ class FirebaseAdminRepository implements AdminRepository {
       .docs
       .map(AuditLog.fromFirestore)
       .toList();
+
+  @override
+  Future<AdminReportingSummary> reporting() async {
+    final results = await Future.wait([
+      db.collection('orders').count().get(),
+      _reportCount('COMPLETED'),
+      _reportCount('PENDING'),
+      _reportCount('PROCESSING'),
+      _reportCount('RETRYING'),
+      _reportCount('FAILED'),
+      _reportCount('DEAD_LETTER'),
+      db
+          .collection('reportSyncJobs')
+          .orderBy('updatedAt', descending: true)
+          .limit(50)
+          .get(),
+    ]);
+    final jobs = results[7] as QuerySnapshot<Map<String, dynamic>>;
+    return AdminReportingSummary(
+      totalOrders: (results[0] as AggregateQuerySnapshot).count ?? 0,
+      synced: (results[1] as AggregateQuerySnapshot).count ?? 0,
+      pending: ((results[2] as AggregateQuerySnapshot).count ?? 0) +
+          ((results[3] as AggregateQuerySnapshot).count ?? 0) +
+          ((results[4] as AggregateQuerySnapshot).count ?? 0),
+      failed: ((results[5] as AggregateQuerySnapshot).count ?? 0) +
+          ((results[6] as AggregateQuerySnapshot).count ?? 0),
+      recentJobs: jobs.docs.map(ReportSyncJob.fromFirestore).toList(),
+    );
+  }
+
+  Future<AggregateQuerySnapshot> _reportCount(String status) => db
+      .collection('reportSyncJobs')
+      .where('status', isEqualTo: status)
+      .count()
+      .get();
 
   @override
   Future<void> updateOrderStatus(String orderId, OrderStatus status) =>
@@ -203,6 +265,22 @@ class FirebaseAdminRepository implements AdminRepository {
   Future<void> setAdminRole(String targetUid, bool enabled) =>
       _call('setAdminRole', {'targetUid': targetUid, 'enabled': enabled});
 
+  @override
+  Future<void> retryReportSync(String orderId) =>
+      _call('retryReportSync', {'orderId': orderId});
+
+  @override
+  Future<String> exportOrdersCsv({String? orderStatus}) async {
+    try {
+      final result = await functions
+          .httpsCallable('exportOrdersCsv')
+          .call<Map<String, dynamic>>({'orderStatus': orderStatus});
+      return result.data['csv'] as String? ?? '';
+    } on FirebaseFunctionsException catch (error) {
+      throw AdminFailure(error.code);
+    }
+  }
+
   Future<void> _call(String name, Map<String, Object?> data) async {
     try {
       await functions.httpsCallable(name).call<void>(data);
@@ -222,15 +300,26 @@ class UnavailableAdminRepository implements AdminRepository {
   @override
   Future<List<AuditLog>> auditLogs() async => const <AuditLog>[];
   @override
+  Future<AdminReportingSummary> reporting() =>
+      throw const AdminFailure('firebaseUnavailable');
+  @override
   Future<List<Category>> categories() async => const <Category>[];
   @override
   Future<List<BmOrder>> orders({String? status}) async => const <BmOrder>[];
+  @override
+  Future<BmOrder?> orderById(String orderId) async => null;
   @override
   Future<List<Product>> products() async => const <Product>[];
   @override
   Future<List<AdminUserSummary>> users() async => const <AdminUserSummary>[];
   @override
   Future<void> setAdminRole(String targetUid, bool enabled) =>
+      throw const AdminFailure('firebaseUnavailable');
+  @override
+  Future<void> retryReportSync(String orderId) =>
+      throw const AdminFailure('firebaseUnavailable');
+  @override
+  Future<String> exportOrdersCsv({String? orderStatus}) =>
       throw const AdminFailure('firebaseUnavailable');
   @override
   Future<void> setProductPrice(

@@ -15,6 +15,11 @@ service cloud.firestore {
       allow create, update: if signedIn() && request.auth.uid == userId;
       allow delete: if false;
     }
+    match /users/{userId}/devices/{deviceId} {
+      // FCM tokens are registered/deactivated only by authenticated callables.
+      // They are never readable by customers or the normal admin UI.
+      allow read, write: if false;
+    }
     match /orders/{orderId} {
       allow read: if signedIn() && (resource.data.userId == request.auth.uid || isAdmin());
       allow create, update, delete: if false;
@@ -48,6 +53,22 @@ service cloud.firestore {
     match /settings/{settingId} {
       allow read: if isAdmin();
       allow write: if isAdmin();
+    }
+    match /notificationJobs/{jobId} {
+      allow read: if isAdmin();
+      allow write: if false;
+    }
+    match /notificationLogs/{logId} {
+      allow read: if isAdmin();
+      allow write: if false;
+    }
+    match /reportSyncJobs/{jobId} {
+      allow read: if isAdmin();
+      allow write: if false;
+    }
+    match /reportSyncState/{orderId} {
+      allow read: if isAdmin();
+      allow write: if false;
     }
     match /{document=**} { allow read, write: if false; }
   }

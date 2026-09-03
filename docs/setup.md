@@ -22,3 +22,9 @@ node scripts/bootstrap-admin.js <firebase-auth-uid>
 ```
 
 This requires Admin SDK credentials or a trusted Firebase environment. Never commit service-account JSON.
+
+## Milestone 5 operational setup
+
+Configure only a development Firebase project first. Add Android `google-services.json` and iOS `GoogleService-Info.plist` (both ignored), enable Cloud Messaging, deploy rules/indexes/functions, then follow [notifications.md](notifications.md) for Android/iOS/APNs validation. Do not request notification permission on splash; BM asks from its notification settings screen with an order-update rationale.
+
+For Microsoft reporting, create the development workbook/tables before deploying workers and set the seven Graph values with `firebase functions:secrets:set`. Follow the least-privilege app registration and recovery procedure in [reporting.md](reporting.md). Missing credentials deliberately create a private failed sync state rather than a fake Excel success.

@@ -1,6 +1,5 @@
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'core/app.dart';
 
@@ -11,5 +10,5 @@ Future<void> main() async {
   } on FirebaseException {
     // Local UI development remains available before Firebase platform files exist.
   }
-  runApp(const ProviderScope(child: BmApp()));
+  runApp(const BmApp());
 }

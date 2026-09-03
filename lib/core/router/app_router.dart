@@ -6,6 +6,7 @@ import '../../features/cart/cart_pages.dart';
 import '../../features/auth/otp_page.dart';
 import '../../features/catalog/catalog_pages.dart';
 import '../../features/home/home_shell.dart';
+import '../../features/notifications/notification_settings_page.dart';
 import '../../features/onboarding/onboarding_page.dart';
 import '../../features/orders/order_pages.dart';
 import '../../features/splash/splash_page.dart';
@@ -22,6 +23,13 @@ final GoRouter appRouter = GoRouter(
         builder: (_, state) => OtpPage(phone: state.extra! as String)),
     GoRoute(path: '/home', builder: (_, __) => const HomeShell()),
     GoRoute(path: '/admin', builder: (_, __) => const AdminGatePage()),
+    GoRoute(
+        path: '/admin/orders/:id',
+        builder: (_, state) =>
+            AdminGatePage(orderId: state.pathParameters['id']!)),
+    GoRoute(
+        path: '/notification-settings',
+        builder: (_, __) => const NotificationSettingsPage()),
     GoRoute(path: '/cart', builder: (_, __) => const CartPage()),
     GoRoute(path: '/checkout', builder: (_, __) => const CheckoutPage()),
     GoRoute(path: '/orders', builder: (_, __) => const OrderHistoryPage()),

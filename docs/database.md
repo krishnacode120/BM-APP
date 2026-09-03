@@ -21,6 +21,10 @@ Milestone 4 adds:
 
 Price updates preserve history by expiring active `productPrices` documents with `effectiveTo` and creating a new active document. Historical orders keep their original `priceAtOrder`.
 
+Milestone 5 adds backend-owned structures: `users/{uid}/devices/{deviceId}` stores one protected FCM token mapping per device; `notificationJobs/{jobId}` is the FCM outbox; `notificationLogs/{jobId}` stores safe delivery results; `reportSyncJobs/{orderId}` is one current Graph/Excel job per order; and `reportSyncState/{orderId}` exposes safe reporting health to admins. Tokens, raw provider errors and secrets are never client-readable.
+
+Required new indexes: `notificationJobs(status ASC, nextRetryAt ASC)`, `reportSyncJobs(status ASC, nextRetryAt ASC)`, and collection-group `devices(enabled ASC, role ASC)`.
+
 Required indexes:
 
 - `orders(userId ASC, createdAt DESC)`

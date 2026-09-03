@@ -12,5 +12,8 @@
   "profile": "சுயவிவரம்",
   "searchHint": "பொருட்கள், பிராண்டுகள் தேடுங்கள்",
   "shopByCategory": "வகைப்படி வாங்குங்கள்",
-  "popularMaterials": "பிரபலமான பொருட்கள்"
+  "popularMaterials": "பிரபலமான பொருட்கள்",
+  "notifications": "அறிவிப்புகள்",
+  "orderUpdates": "ஆர்டர் அறிவிப்புகள்",
+  "enableNotifications": "அறிவிப்புகளை இயக்கவும்"
 }

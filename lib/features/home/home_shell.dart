@@ -48,6 +48,7 @@ class HomeShell extends ConsumerWidget {
           onDestinationSelected: (index) {
             if (index == 1) context.go('/orders');
             if (index == 2) context.go('/cart');
+            if (index == 3) context.push('/notification-settings');
           },
           destinations: <NavigationDestination>[
             NavigationDestination(

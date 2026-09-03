@@ -64,4 +64,6 @@ The security tests verify customer order isolation, normal-user catalog write de
 
 ## Deferred to Milestone 5
 
-Excel synchronization, FCM notifications, reporting exports and production notification deep links are intentionally not implemented in Milestone 4.
+Milestone 5 adds **Reports & Sync**. It shows total orders plus synced/pending/failed report work, safe failure codes and a trusted Retry sync action. It also exposes a private callable CSV fallback copied to the device clipboard. The content is sensitive operational data; do not share exports outside authorized business workflows.
+
+Excel sync is eventually consistent. A report error does not mean an order failed; inspect the Firestore order first, correct Microsoft Graph/secret configuration, then retry the job. See [reporting.md](reporting.md) and [notifications.md](notifications.md).

@@ -1,10 +1,30 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.testHooks = exports.setAdminRole = exports.setProductPrice = exports.updateInventoryStatus = exports.upsertCategory = exports.upsertProduct = exports.updateOrderFinancials = exports.updateAdminNote = exports.updatePaymentStatus = exports.updateOrderStatus = exports.createOrder = void 0;
+exports.testHooks = exports.processOperationalRetries = exports.processReportSyncJobOnWrite = exports.processNotificationJobOnWrite = exports.exportOrdersCsv = exports.retryReportSync = exports.deactivateDeviceToken = exports.registerDeviceToken = exports.setAdminRole = exports.setProductPrice = exports.updateInventoryStatus = exports.upsertCategory = exports.upsertProduct = exports.updateOrderFinancials = exports.updateAdminNote = exports.updatePaymentStatus = exports.updateOrderStatus = exports.createOrder = void 0;
 const admin = require("firebase-admin");
+const params_1 = require("firebase-functions/params");
+const firestore_1 = require("firebase-functions/v2/firestore");
 const https_1 = require("firebase-functions/v2/https");
+const scheduler_1 = require("firebase-functions/v2/scheduler");
+const operational_1 = require("./operational");
 admin.initializeApp();
 const db = admin.firestore();
+const microsoftTenantId = (0, params_1.defineSecret)("MICROSOFT_TENANT_ID");
+const microsoftClientId = (0, params_1.defineSecret)("MICROSOFT_CLIENT_ID");
+const microsoftClientSecret = (0, params_1.defineSecret)("MICROSOFT_CLIENT_SECRET");
+const microsoftDriveId = (0, params_1.defineSecret)("MICROSOFT_DRIVE_ID");
+const microsoftWorkbookItemId = (0, params_1.defineSecret)("MICROSOFT_WORKBOOK_ITEM_ID");
+const microsoftOrdersTable = (0, params_1.defineSecret)("MICROSOFT_ORDERS_TABLE");
+const microsoftOrderItemsTable = (0, params_1.defineSecret)("MICROSOFT_ORDER_ITEMS_TABLE");
+const graphSecrets = [
+    microsoftTenantId,
+    microsoftClientId,
+    microsoftClientSecret,
+    microsoftDriveId,
+    microsoftWorkbookItemId,
+    microsoftOrdersTable,
+    microsoftOrderItemsTable,
+];
 const orderableStatuses = new Set(["available", "lowStock"]);
 const orderStatuses = new Set([
     "pending",
@@ -133,7 +153,13 @@ exports.createOrder = (0, https_1.onCall)(async (request) => {
             orderId: orderRef.id,
             createdAt: now,
         });
-        return { order: withId(orderRef.id, order) };
+        const persistedOrder = withId(orderRef.id, order);
+        // The order and its operational outbox records commit together. Delivery of
+        // push/reporting side effects is deliberately handled after this transaction.
+        (0, operational_1.enqueueOrderNotification)(tx, db, persistedOrder, "ORDER_CREATED", now);
+        (0, operational_1.enqueueOrderNotification)(tx, db, persistedOrder, "NEW_ORDER", now);
+        (0, operational_1.enqueueOrderReportSync)(tx, db, orderRef.id, "ORDER_CREATED", now, order.orderNumber);
+        return { order: persistedOrder };
     });
 });
 exports.updateOrderStatus = (0, https_1.onCall)(async (request) => {
@@ -158,7 +184,7 @@ exports.updateOrderStatus = (0, https_1.onCall)(async (request) => {
             oldValue: { orderStatus: previous },
             newValue: { orderStatus: nextStatus },
         };
-    });
+    }, { notification: (0, operational_1.notificationEventForStatus)(nextStatus), report: "ORDER_STATUS_CHANGED" });
 });
 exports.updatePaymentStatus = (0, https_1.onCall)(async (request) => {
     const adminUid = requireAdmin(request.auth);
@@ -178,7 +204,10 @@ exports.updatePaymentStatus = (0, https_1.onCall)(async (request) => {
         },
         oldValue: { paymentStatus: current.paymentStatus ?? null },
         newValue: { paymentStatus },
-    }));
+    }), {
+        notification: paymentStatus === "verified" ? "PAYMENT_VERIFIED" : null,
+        report: "PAYMENT_STATUS_CHANGED",
+    });
 });
 exports.updateAdminNote = (0, https_1.onCall)(async (request) => {
     const adminUid = requireAdmin(request.auth);
@@ -219,7 +248,7 @@ exports.updateOrderFinancials = (0, https_1.onCall)(async (request) => {
             finalTotal: current.finalTotal ?? null,
         },
         newValue: { confirmedSubtotal, deliveryCharge, finalTotal: confirmedSubtotal + deliveryCharge },
-    }));
+    }), { report: "ORDER_FINANCIALS_CHANGED" });
 });
 exports.upsertProduct = (0, https_1.onCall)(async (request) => {
     const adminUid = requireAdmin(request.auth);
@@ -277,8 +306,13 @@ exports.updateInventoryStatus = (0, https_1.onCall)(async (request) => {
         updatedAt: admin.firestore.FieldValue.serverTimestamp(),
         updatedBy: adminUid,
     };
-    await ref.update(updates);
-    await writeAudit(adminUid, "INVENTORY_CHANGED", "product", productId, { stockStatus: before.get("stockStatus"), stockQuantity: before.get("stockQuantity") ?? null }, { stockStatus: status, stockQuantity });
+    const batch = db.batch();
+    batch.update(ref, updates);
+    batch.set(db.collection("auditLogs").doc(), auditData(adminUid, "INVENTORY_CHANGED", "product", productId, { stockStatus: before.get("stockStatus"), stockQuantity: before.get("stockQuantity") ?? null }, { stockStatus: status, stockQuantity }));
+    if (status === "lowStock" && before.get("stockStatus") !== "lowStock") {
+        (0, operational_1.enqueueLowStockNotification)(batch, db, productId, String(before.get("name") ?? ""));
+    }
+    await batch.commit();
     return { id: productId };
 });
 exports.setProductPrice = (0, https_1.onCall)(async (request) => {
@@ -338,9 +372,146 @@ exports.setAdminRole = (0, https_1.onCall)(async (request) => {
         updatedAt: admin.firestore.FieldValue.serverTimestamp(),
         updatedBy: adminUid,
     }, { merge: true });
+    const devices = await db.collection("users").doc(targetUid).collection("devices").get();
+    if (!devices.empty) {
+        const batch = db.batch();
+        for (const device of devices.docs) {
+            batch.set(device.ref, {
+                role: enabled ? "admin" : "user",
+                ...(enabled ? {} : { enabled: false }),
+                updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+            }, { merge: true });
+        }
+        await batch.commit();
+    }
     await writeAudit(adminUid, enabled ? "ADMIN_CREATED" : "ADMIN_REVOKED", "user", targetUid, null, { role: enabled ? "admin" : "user" });
     return { targetUid, role: enabled ? "admin" : "user" };
 });
+/** Registers a single physical/browser device under the authenticated owner. */
+exports.registerDeviceToken = (0, https_1.onCall)(async (request) => {
+    const auth = request.auth;
+    const uid = auth?.uid;
+    if (!uid)
+        throw new https_1.HttpsError("unauthenticated", "Sign in required.");
+    const data = request.data;
+    const deviceId = readId(data, "deviceId");
+    const token = String(data.token ?? "").trim();
+    const platform = String(data.platform ?? "").trim();
+    const locale = String(data.locale ?? "en").trim().toLowerCase();
+    if (token.length < 20 || token.length > 4096 || !["android", "ios", "web"].includes(platform)) {
+        throw new https_1.HttpsError("invalid-argument", "Invalid device token.");
+    }
+    const isAdmin = auth?.token.admin === true || auth?.token.role === "admin";
+    const now = admin.firestore.FieldValue.serverTimestamp();
+    await db.collection("users").doc(uid).collection("devices").doc(deviceId).set({
+        token,
+        platform,
+        locale: locale.startsWith("ta") ? "ta" : "en",
+        appVersion: String(data.appVersion ?? "").trim().slice(0, 80),
+        role: isAdmin ? "admin" : "user",
+        enabled: true,
+        createdAt: now,
+        updatedAt: now,
+        lastSeenAt: now,
+    }, { merge: true });
+    return { deviceId };
+});
+/** Disables the current account/device mapping before logout or account switch. */
+exports.deactivateDeviceToken = (0, https_1.onCall)(async (request) => {
+    const uid = request.auth?.uid;
+    if (!uid)
+        throw new https_1.HttpsError("unauthenticated", "Sign in required.");
+    const deviceId = readId(request.data, "deviceId");
+    await db.collection("users").doc(uid).collection("devices").doc(deviceId).set({
+        enabled: false,
+        updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+        lastSeenAt: admin.firestore.FieldValue.serverTimestamp(),
+    }, { merge: true });
+    return { deviceId };
+});
+/** Moves a failed/dead-letter reporting job back to the durable queue. */
+exports.retryReportSync = (0, https_1.onCall)(async (request) => {
+    const adminUid = requireAdmin(request.auth);
+    const orderId = readId(request.data, "orderId");
+    const ref = db.collection("reportSyncJobs").doc(orderId);
+    const job = await ref.get();
+    if (!job.exists)
+        throw new https_1.HttpsError("not-found", "Report job not found.");
+    const now = admin.firestore.Timestamp.now();
+    await db.runTransaction(async (tx) => {
+        tx.set(ref, {
+            status: "PENDING", attemptCount: 0, nextRetryAt: now, lastError: null,
+            completedAt: null, leaseExpiresAt: null, updatedAt: now,
+        }, { merge: true });
+        tx.create(db.collection("auditLogs").doc(), auditData(adminUid, "REPORT_SYNC_RETRIED", "reportSyncJob", orderId, { status: job.get("status") }, { status: "PENDING" }));
+    });
+    return { orderId };
+});
+/** Private CSV fallback for admins when Graph reporting is unavailable. */
+exports.exportOrdersCsv = (0, https_1.onCall)(async (request) => {
+    requireAdmin(request.auth);
+    const data = request.data;
+    const status = data?.orderStatus == null ? null : String(data.orderStatus).trim();
+    if (status != null && !orderStatuses.has(status)) {
+        throw new https_1.HttpsError("invalid-argument", "Invalid order status.");
+    }
+    let query = db.collection("orders").orderBy("createdAt", "desc").limit(500);
+    if (status)
+        query = db.collection("orders").where("orderStatus", "==", status)
+            .orderBy("createdAt", "desc").limit(500);
+    const snapshot = await query.get();
+    const rows = snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() }));
+    return {
+        filename: `bm-orders-${new Date().toISOString().slice(0, 10)}.csv`,
+        csv: ordersCsv(rows),
+    };
+});
+exports.processNotificationJobOnWrite = (0, firestore_1.onDocumentWritten)("notificationJobs/{jobId}", async (event) => {
+    if (!event.data?.after.exists)
+        return;
+    await (0, operational_1.processNotificationJob)(db, event.params.jobId);
+});
+exports.processReportSyncJobOnWrite = (0, firestore_1.onDocumentWritten)({
+    document: "reportSyncJobs/{jobId}",
+    secrets: graphSecrets,
+}, async (event) => {
+    if (!event.data?.after.exists)
+        return;
+    await (0, operational_1.processReportSyncJob)(db, event.params.jobId, graphConfig());
+});
+exports.processOperationalRetries = (0, scheduler_1.onSchedule)({
+    schedule: "every 5 minutes",
+    timeZone: "Asia/Kolkata",
+    secrets: graphSecrets,
+}, async () => {
+    await (0, operational_1.processDueOperationalJobs)(db, graphConfig());
+});
+function graphConfig() {
+    return {
+        tenantId: microsoftTenantId.value() ?? "",
+        clientId: microsoftClientId.value() ?? "",
+        clientSecret: microsoftClientSecret.value() ?? "",
+        driveId: microsoftDriveId.value() ?? "",
+        workbookItemId: microsoftWorkbookItemId.value() ?? "",
+        ordersTable: microsoftOrdersTable.value() ?? "Orders",
+        orderItemsTable: microsoftOrderItemsTable.value() ?? "OrderItems",
+    };
+}
+function ordersCsv(rows) {
+    const headers = ["Order ID", "Order Number", "Created At", "Customer Name", "Phone", "Location", "Items", "Estimated Total", "Final Total", "Payment Status", "Order Status", "Last Updated"];
+    const values = rows.map((order) => [
+        order.id, order.orderNumber, csvDate(order.createdAt), order.customerName, order.phoneNumber,
+        order.locationName, Array.isArray(order.items) ? order.items.map((item) => `${item.productName ?? ""} x${item.quantity ?? 0}`).join("; ") : "",
+        order.estimatedSubtotal, order.finalTotal ?? "", order.paymentStatus, order.orderStatus, csvDate(order.updatedAt),
+    ]);
+    return [headers, ...values].map((row) => row.map(csvCell).join(",")).join("\n");
+}
+function csvCell(value) {
+    return `"${String(value ?? "").replace(/"/g, '""')}"`;
+}
+function csvDate(value) {
+    return value instanceof admin.firestore.Timestamp ? value.toDate().toISOString() : String(value ?? "");
+}
 function parseRequest(data) {
     if (!data || typeof data !== "object") {
         throw new https_1.HttpsError("invalid-argument", "Invalid request.");
@@ -416,7 +587,7 @@ function readOptionalInteger(value) {
 function canTransition(from, to) {
     return allowedOrderTransitions.get(from)?.includes(to) ?? false;
 }
-async function updateOrderFields(adminUid, orderId, action, build) {
+async function updateOrderFields(adminUid, orderId, action, build, sideEffects = {}) {
     const ref = db.collection("orders").doc(orderId);
     return db.runTransaction(async (tx) => {
         const doc = await tx.get(ref);
@@ -425,7 +596,18 @@ async function updateOrderFields(adminUid, orderId, action, build) {
         const change = build(doc.data());
         tx.update(ref, change.updates);
         tx.create(db.collection("auditLogs").doc(), auditData(adminUid, action, "order", orderId, change.oldValue, change.newValue));
-        const after = { ...doc.data(), ...change.updates, id: orderId };
+        const after = {
+            ...doc.data(),
+            ...change.updates,
+            id: orderId,
+        };
+        const now = admin.firestore.Timestamp.now();
+        if (sideEffects.notification) {
+            (0, operational_1.enqueueOrderNotification)(tx, db, after, sideEffects.notification, now);
+        }
+        if (sideEffects.report) {
+            (0, operational_1.enqueueOrderReportSync)(tx, db, orderId, sideEffects.report, now, String(after.orderNumber ?? ""));
+        }
         return { order: after };
     });
 }

@@ -17,3 +17,9 @@ Milestone 4 admin flow:
 `/admin` -> `AdminGatePage` -> Firebase ID token claim refresh -> `AdminShell`. Admin reads are scoped through `AdminRepository`; sensitive writes use callable functions such as `updateOrderStatus`, `updatePaymentStatus`, `updateInventoryStatus`, `setProductPrice`, and `setAdminRole`. The backend validates admin claims, state transitions, financial values, inventory states and price-history rollover before writing Firestore and audit logs.
 
 Admin UI currently lives in the same Flutter project to share models and repositories, but it is separated under `lib/features/admin`.
+
+Milestone 5 operational flow:
+
+`createOrder` / trusted admin mutation -> same Firestore transaction writes business record + `notificationJobs`/`reportSyncJobs` outbox record -> Firestore worker or scheduled retry claims a leased job -> FCM or Microsoft Graph -> safe operational status/log.
+
+The transaction never performs an external HTTP or FCM request. Workers are at-least-once and processors use stable job/order keys, controlled retry and dead-letter states. Flutter's `NotificationService` owns permission-aware token registration and allow-listed deep-link delivery; UI widgets do not call FCM or callable token APIs directly.

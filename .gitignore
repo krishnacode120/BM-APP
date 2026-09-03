@@ -5,9 +5,11 @@
 .flutter-plugins-dependencies
 build/
 coverage/
+.idea/
+*.iml
+firestore-debug.log
 
 # Credentials and local Firebase configuration
 .env
 android/app/google-services.json
 ios/Runner/GoogleService-Info.plist
-

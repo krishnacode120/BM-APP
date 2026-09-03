@@ -107,6 +107,24 @@ class AppLocalizations {
   String get somethingWentWrong =>
       isTamil ? 'ஏதோ தவறு ஏற்பட்டது' : 'Something went wrong';
   String get noOrders => isTamil ? 'ஆர்டர்கள் எதுவும் இல்லை' : 'No orders yet';
+  String get notifications => isTamil ? 'அறிவிப்புகள்' : 'Notifications';
+  String get orderUpdates => isTamil ? 'ஆர்டர் அறிவிப்புகள்' : 'Order updates';
+  String get notificationRationale => isTamil
+      ? 'ஆர்டர் நிலை மற்றும் விநியோக புதுப்பிப்புகளைப் பெற அறிவிப்புகளை இயக்கவும்.'
+      : 'Enable notifications to receive order-status and delivery updates.';
+  String get enableNotifications =>
+      isTamil ? 'அறிவிப்புகளை இயக்கவும்' : 'Enable notifications';
+  String get notificationsEnabled =>
+      isTamil ? 'அறிவிப்புகள் இயக்கப்பட்டுள்ளன' : 'Notifications are enabled';
+  String get notificationsDenied => isTamil
+      ? 'அறிவிப்புகள் மறுக்கப்பட்டுள்ளன. சாதன அமைப்புகளில் அவற்றை இயக்கலாம்.'
+      : 'Notifications are disabled. You can enable them in device settings.';
+  String get notificationsUnavailable => isTamil
+      ? 'Firebase அமைக்கப்பட்ட பிறகு அறிவிப்புகள் கிடைக்கும்.'
+      : 'Notifications are available after Firebase is configured.';
+  String get notificationsNotEnabled => isTamil
+      ? 'அறிவிப்புகள் இன்னும் இயக்கப்படவில்லை'
+      : 'Notifications are not enabled yet';
   String get firebaseUnavailable => isTamil
       ? 'ஆர்டர் செய்ய Firebase development அமைப்பு தேவை.'
       : 'Order submission requires Firebase development configuration.';

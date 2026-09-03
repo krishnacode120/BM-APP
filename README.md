@@ -10,7 +10,9 @@ Milestone 2 adds Firestore-backed category, product, location and pricing reposi
 
 Milestone 3 adds a real cart, user-scoped local cart persistence, checkout, order success, order history/detail screens, immutable order snapshots, and a callable Cloud Function (`createOrder`) for server-authoritative order creation. The client sends only product IDs, quantities, delivery/customer details, and an idempotency key; the backend derives the authenticated user, resolves current prices, validates inventory/minimum quantities/location, generates the order number, and writes the order.
 
-Milestone 4 adds a separated `/admin` experience, admin-claim route guard, dashboard, order operations, product/inventory/category/users/audit/settings foundations, trusted admin callable functions, admin bootstrap script, Firebase Storage product-media rules, and Firestore emulator rule tests. Firebase project credentials, real OTP execution, full image upload UI, FCM, and Excel synchronization remain pending. The app intentionally never claims Firebase order submission or admin operations are available when platform configuration is absent.
+Milestone 4 adds a separated `/admin` experience, admin-claim route guard, dashboard, order operations, product/inventory/category/users/audit/settings foundations, trusted admin callable functions, admin bootstrap script, Firebase Storage product-media rules, and Firestore emulator rule tests.
+
+Milestone 5 adds a durable operational outbox: FCM device-token registration, token refresh/deactivation, customer/admin order-event push templates, safe deep links, invalid-token cleanup, controlled retries, Microsoft Graph/Excel table synchronization, retry/dead-letter tracking, a private Reports & Sync admin page, and an authenticated CSV fallback. Notifications and reporting are side effects; orders remain successful when either destination is unavailable.
 
 ## Structure
 
@@ -47,6 +49,6 @@ cd functions
 npm run build
 ```
 
-See [docs/setup.md](docs/setup.md), [docs/architecture.md](docs/architecture.md), [docs/database.md](docs/database.md), [docs/security.md](docs/security.md), and [docs/admin-guide.md](docs/admin-guide.md).
+See [docs/setup.md](docs/setup.md), [docs/architecture.md](docs/architecture.md), [docs/database.md](docs/database.md), [docs/security.md](docs/security.md), [docs/admin-guide.md](docs/admin-guide.md), [docs/notifications.md](docs/notifications.md), and [docs/reporting.md](docs/reporting.md).
 
 The repository includes deliberately restrictive Firebase rules as a deployment-safe baseline. Expand them alongside the trusted Cloud Functions used for product, order and admin workflows; do not deploy permissive rules for development convenience.

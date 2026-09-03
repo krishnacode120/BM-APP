@@ -12,5 +12,8 @@
   "profile": "Profile",
   "searchHint": "Search materials, brands, categories...",
   "shopByCategory": "Shop by Category",
-  "popularMaterials": "Popular Materials"
+  "popularMaterials": "Popular Materials",
+  "notifications": "Notifications",
+  "orderUpdates": "Order updates",
+  "enableNotifications": "Enable notifications"
 }
