@@ -12,6 +12,12 @@ service cloud.firestore {
       allow read: if signedIn() && (resource.data.userId == request.auth.uid || isAdmin());
       allow create, update, delete: if false;
     }
+    match /orderRequests/{requestId} {
+      allow read, write: if false;
+    }
+    match /counters/{counterId} {
+      allow read, write: if false;
+    }
     match /categories/{categoryId} { allow read: if resource.data.isActive == true; }
     match /products/{productId} { allow read: if resource.data.isActive == true && resource.data.stockStatus != 'hidden'; }
     match /locations/{locationId} { allow read: if resource.data.active == true; }

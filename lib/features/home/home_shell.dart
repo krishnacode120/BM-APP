@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../l10n/app_localizations.dart';
+import '../cart/cart_notifier.dart';
 import '../catalog/catalog_pages.dart';
 import '../catalog/catalog_providers.dart';
 
@@ -14,12 +15,13 @@ class HomeShell extends ConsumerWidget {
     final categories = ref.watch(categoriesProvider);
     final popular = ref.watch(popularProductsProvider);
     final location = ref.watch(selectedLocationProvider).valueOrNull;
+    final cartCount = ref.watch(cartProvider.select((cart) => cart.itemCount));
     return Scaffold(
       body: SafeArea(
           child: ListView(padding: const EdgeInsets.all(20), children: <Widget>[
         ListTile(
             leading: const Icon(Icons.location_on_outlined),
-            title: const Text('Deliver to'),
+            title: Text(t.deliverTo),
             subtitle: Text(location?.displayName ?? t.selectLocation),
             trailing: const Icon(Icons.expand_more),
             onTap: () => context.push('/locations')),
@@ -41,16 +43,26 @@ class HomeShell extends ConsumerWidget {
         Text(t.popularMaterials, style: Theme.of(context).textTheme.titleLarge),
         SizedBox(height: 260, child: CatalogProductList(value: popular)),
       ])),
-      bottomNavigationBar: NavigationBar(destinations: <NavigationDestination>[
-        NavigationDestination(
-            icon: const Icon(Icons.home_outlined), label: t.home),
-        NavigationDestination(
-            icon: const Icon(Icons.receipt_long_outlined), label: t.orders),
-        NavigationDestination(
-            icon: const Icon(Icons.shopping_cart_outlined), label: t.cart),
-        NavigationDestination(
-            icon: const Icon(Icons.person_outline), label: t.profile)
-      ]),
+      bottomNavigationBar: NavigationBar(
+          selectedIndex: 0,
+          onDestinationSelected: (index) {
+            if (index == 1) context.go('/orders');
+            if (index == 2) context.go('/cart');
+          },
+          destinations: <NavigationDestination>[
+            NavigationDestination(
+                icon: const Icon(Icons.home_outlined), label: t.home),
+            NavigationDestination(
+                icon: const Icon(Icons.receipt_long_outlined), label: t.orders),
+            NavigationDestination(
+                icon: Badge(
+                    isLabelVisible: cartCount > 0,
+                    label: Text('$cartCount'),
+                    child: const Icon(Icons.shopping_cart_outlined)),
+                label: t.cart),
+            NavigationDestination(
+                icon: const Icon(Icons.person_outline), label: t.profile)
+          ]),
     );
   }
 }

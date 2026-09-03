@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../l10n/app_localizations.dart';
 import '../../models/product.dart';
+import '../cart/cart_notifier.dart';
 import 'catalog_providers.dart';
 
 class LocationSelectorPage extends ConsumerWidget {
@@ -51,24 +52,59 @@ class ProductDetailPage extends ConsumerWidget {
   final String productId;
   @override
   Widget build(BuildContext context, WidgetRef ref) => Scaffold(
-      appBar: AppBar(),
+      appBar: AppBar(actions: [
+        IconButton(
+            tooltip: AppLocalizations.of(context).cart,
+            onPressed: () => context.push('/cart'),
+            icon: const Icon(Icons.shopping_cart_outlined))
+      ]),
       body: ref.watch(productProvider(productId)).when(
           loading: () => const Center(child: CircularProgressIndicator()),
           error: (_, __) => const Center(child: Text('Unable to load product')),
           data: (p) => p == null
               ? const Center(child: Text('Product unavailable'))
-              : ListView(padding: const EdgeInsets.all(20), children: <Widget>[
-                  ProductTile(product: p),
-                  const SizedBox(height: 16),
-                  Text(p.localizedDescription(
-                      AppLocalizations.of(context).locale.languageCode)),
-                  const SizedBox(height: 16),
-                  ...p.specifications.entries.map((e) =>
-                      ListTile(title: Text(e.key), trailing: Text(e.value))),
-                  FilledButton.tonal(
-                      onPressed: () {},
-                      child: Text(AppLocalizations.of(context).contactBm))
-                ])));
+              : _ProductDetailContent(product: p)));
+}
+
+class _ProductDetailContent extends ConsumerWidget {
+  const _ProductDetailContent({required this.product});
+  final Product product;
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final t = AppLocalizations.of(context);
+    final location = ref.watch(selectedLocationProvider).valueOrNull;
+    final price = location == null
+        ? null
+        : ref
+            .watch(productPriceProvider(
+                (productId: product.id, locationId: location.id)))
+            .valueOrNull;
+    return ListView(padding: const EdgeInsets.all(20), children: <Widget>[
+      ProductTile(product: product),
+      const SizedBox(height: 16),
+      Text(product.localizedDescription(t.locale.languageCode)),
+      const SizedBox(height: 16),
+      ...product.specifications.entries
+          .map((e) => ListTile(title: Text(e.key), trailing: Text(e.value))),
+      FilledButton.tonal(onPressed: () {}, child: Text(t.contactBm)),
+      const SizedBox(height: 12),
+      FilledButton.icon(
+          onPressed: product.canOrder && location != null && price != null
+              ? () {
+                  final error = ref.read(cartProvider.notifier).add(
+                        product,
+                        quantity: product.minimumOrderQuantity,
+                        locationId: location.id,
+                        price: price.price,
+                      );
+                  ScaffoldMessenger.of(context)
+                      .showSnackBar(SnackBar(content: Text(error ?? t.cart)));
+                }
+              : null,
+          icon: const Icon(Icons.add_shopping_cart),
+          label: Text(t.cart))
+    ]);
+  }
 }
 
 class CatalogProductList extends StatelessWidget {

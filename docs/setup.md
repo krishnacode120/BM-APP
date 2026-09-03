@@ -4,3 +4,6 @@ Create distinct Firebase projects for development, staging, and production. Conf
 
 Enable Phone Authentication, add Android SHA-1/SHA-256 values, configure APNs for iOS, and limit authorized domains for web/admin. Use `--dart-define=BM_ENV=development|staging|production`; no credential belongs in source code.
 
+For Milestone 3 order testing, configure Firebase Auth, Firestore, and Cloud Functions in a development project or emulator suite. Install backend dependencies from `functions/` with `npm install`, compile with `npm run build`, and deploy only to development until the flow is verified.
+
+The local catalog fallback remains available without Firebase, but order submission intentionally returns a Firebase configuration error instead of creating a fake local order.

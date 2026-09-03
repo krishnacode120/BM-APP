@@ -1,11 +1,14 @@
 import 'package:go_router/go_router.dart';
 
 import '../../features/auth/login_page.dart';
+import '../../features/cart/cart_pages.dart';
 import '../../features/auth/otp_page.dart';
 import '../../features/catalog/catalog_pages.dart';
 import '../../features/home/home_shell.dart';
 import '../../features/onboarding/onboarding_page.dart';
+import '../../features/orders/order_pages.dart';
 import '../../features/splash/splash_page.dart';
+import '../../models/order.dart';
 
 final GoRouter appRouter = GoRouter(
   initialLocation: '/splash',
@@ -17,6 +20,17 @@ final GoRouter appRouter = GoRouter(
         path: '/otp',
         builder: (_, state) => OtpPage(phone: state.extra! as String)),
     GoRoute(path: '/home', builder: (_, __) => const HomeShell()),
+    GoRoute(path: '/cart', builder: (_, __) => const CartPage()),
+    GoRoute(path: '/checkout', builder: (_, __) => const CheckoutPage()),
+    GoRoute(path: '/orders', builder: (_, __) => const OrderHistoryPage()),
+    GoRoute(
+        path: '/orders/:id',
+        builder: (_, state) =>
+            OrderDetailPage(orderId: state.pathParameters['id']!)),
+    GoRoute(
+        path: '/order-success',
+        builder: (_, state) =>
+            OrderSuccessPage(order: state.extra! as BmOrder)),
     GoRoute(
         path: '/locations', builder: (_, __) => const LocationSelectorPage()),
     GoRoute(

@@ -52,6 +52,112 @@ class AppLocalizations {
   String get lowStock => isTamil ? 'குறைந்த இருப்பு' : 'Low stock';
   String get outOfStock => isTamil ? 'இருப்பு இல்லை' : 'Out of stock';
   String get comingSoon => isTamil ? 'விரைவில் வருகிறது' : 'Coming soon';
+  String get deliverTo => isTamil ? 'வழங்க வேண்டிய இடம்' : 'Deliver to';
+  String get cartEmpty =>
+      isTamil ? 'உங்கள் கூடை காலியாக உள்ளது' : 'Your cart is empty';
+  String get browseMaterials =>
+      isTamil ? 'பொருட்களைப் பாருங்கள்' : 'Browse Materials';
+  String get emptyCartMessage => isTamil
+      ? 'கட்டுமானப் பொருட்களைத் தேர்ந்தெடுத்து கூடையில் சேர்க்கவும்.'
+      : 'Browse construction materials and add items to your cart.';
+  String get subtotal => isTamil ? 'கூட்டுத்தொகை' : 'Subtotal';
+  String get estimatedTotal =>
+      isTamil ? 'மதிப்பிடப்பட்ட மொத்தம்' : 'Estimated Total';
+  String get finalPriceNotice => isTamil
+      ? 'இறுதி விலையை BM உறுதிப்படுத்தும்.'
+      : 'Final price will be confirmed by BM.';
+  String get checkout => isTamil ? 'செக்க்அவுட்' : 'Checkout';
+  String get reviewCart =>
+      isTamil ? 'கூடையை மதிப்பாய்வு செய்யவும்' : 'Review Cart';
+  String get deliveryLocation => isTamil ? 'விநியோக இடம்' : 'Delivery Location';
+  String get customerName => isTamil ? 'வாடிக்கையாளர் பெயர்' : 'Customer name';
+  String get phoneNumber => isTamil ? 'தொலைபேசி எண்' : 'Phone number';
+  String get address => isTamil ? 'முகவரி' : 'Address';
+  String get orderNote => isTamil ? 'ஆர்டர் குறிப்பு' : 'Order note';
+  String get placeOrder => isTamil ? 'ஆர்டர் செய்யவும்' : 'Place Order';
+  String get placingOrder =>
+      isTamil ? 'ஆர்டர் செய்யப்படுகிறது' : 'Placing order...';
+  String get orderSubmitted =>
+      isTamil ? 'ஆர்டர் சமர்ப்பிக்கப்பட்டது' : 'Order Submitted';
+  String get viewOrder => isTamil ? 'ஆர்டரைப் பார்க்கவும்' : 'View Order';
+  String get continueShopping =>
+      isTamil ? 'தொடர்ந்து வாங்குங்கள்' : 'Continue Shopping';
+  String get priceUpdated =>
+      isTamil ? 'விலை புதுப்பிக்கப்பட்டது' : 'Price updated';
+  String get priceUnavailable =>
+      isTamil ? 'விலை கிடைக்கவில்லை' : 'Price unavailable';
+  String get productUnavailable =>
+      isTamil ? 'பொருள் கிடைக்கவில்லை' : 'Product unavailable';
+  String get minimumOrderInvalid => isTamil
+      ? 'குறைந்தபட்ச ஆர்டர் அளவை பூர்த்தி செய்யவும்.'
+      : 'Please update the quantity to meet the minimum order.';
+  String get cartPricesChanged =>
+      isTamil ? 'கூடை விலைகள் மாறியுள்ளன' : 'Cart prices have changed';
+  String get acknowledgePrices =>
+      isTamil ? 'விலைகளை ஏற்கிறேன்' : 'Acknowledge prices';
+  String get orderHistory => isTamil ? 'ஆர்டர் வரலாறு' : 'Order History';
+  String get orderDetails => isTamil ? 'ஆர்டர் விவரங்கள்' : 'Order Details';
+  String get paymentPending =>
+      isTamil ? 'பணம் நிலுவையில் உள்ளது' : 'Payment Pending';
+  String get paymentVerificationRequired =>
+      isTamil ? 'பணம் சரிபார்ப்பு தேவை' : 'Payment Verification Required';
+  String get paymentNotice => isTamil
+      ? 'ஆர்டர் உறுதிப்படுத்தப்பட்ட பிறகு BM நேரடியாக பணம் பற்றிச் சொல்வார்.'
+      : 'Payment will be arranged directly with BM after order confirmation.';
+  String get somethingWentWrong =>
+      isTamil ? 'ஏதோ தவறு ஏற்பட்டது' : 'Something went wrong';
+  String get noOrders => isTamil ? 'ஆர்டர்கள் எதுவும் இல்லை' : 'No orders yet';
+  String get firebaseUnavailable => isTamil
+      ? 'ஆர்டர் செய்ய Firebase development அமைப்பு தேவை.'
+      : 'Order submission requires Firebase development configuration.';
+  String unitLabel(String unit) => switch (unit) {
+        'piece' => isTamil ? 'பீஸ்' : 'Piece',
+        'bag' => isTamil ? 'மூட்டை' : 'Bag',
+        'load' => isTamil ? 'லோடு' : 'Load',
+        'kg' => isTamil ? 'கிலோ' : 'Kg',
+        'ton' => isTamil ? 'டன்' : 'Ton',
+        'meter' => isTamil ? 'மீட்டர்' : 'Meter',
+        'cubicFeet' => isTamil ? 'கன அடி' : 'Cubic Feet',
+        _ => isTamil ? 'மற்றவை' : 'Other',
+      };
+  String orderStatus(String status) => switch (status) {
+        'confirmed' => isTamil ? 'உறுதிப்படுத்தப்பட்டது' : 'Confirmed',
+        'processing' => isTamil ? 'செயல்பாட்டில்' : 'Processing',
+        'ready' => isTamil ? 'தயார்' : 'Ready',
+        'outForDelivery' =>
+          isTamil ? 'விநியோகத்திற்கு சென்றது' : 'Out for Delivery',
+        'delivered' => isTamil ? 'வழங்கப்பட்டது' : 'Delivered',
+        'cancelled' => isTamil ? 'ரத்து செய்யப்பட்டது' : 'Cancelled',
+        _ => isTamil ? 'நிலுவையில்' : 'Pending',
+      };
+  String paymentStatus(String status) => switch (status) {
+        'verificationRequired' => paymentVerificationRequired,
+        'verified' => isTamil ? 'சரிபார்க்கப்பட்டது' : 'Verified',
+        'failed' => isTamil ? 'தோல்வியடைந்தது' : 'Failed',
+        'refunded' => isTamil ? 'திருப்பிச் செலுத்தப்பட்டது' : 'Refunded',
+        'notRequired' => isTamil ? 'தேவை இல்லை' : 'Not Required',
+        _ => paymentPending,
+      };
+  String orderError(String code) => switch (code) {
+        'unauthenticated' =>
+          isTamil ? 'மீண்டும் உள்நுழைக.' : 'Please sign in again.',
+        'price-changed' || 'failed-precondition' => isTamil
+            ? 'ஒரு அல்லது பல விலைகள் மாறியுள்ளன. கூடையை மதிப்பாய்வு செய்யவும்.'
+            : 'One or more prices changed. Please review your cart.',
+        'out-of-stock' => isTamil
+            ? 'ஒரு அல்லது பல பொருட்கள் தற்போது கிடைக்கவில்லை.'
+            : 'One or more products are currently unavailable.',
+        'not-found' => isTamil
+            ? 'இந்த இடத்திற்கு விலை கிடைக்கவில்லை.'
+            : 'Price is not available for this location.',
+        'invalid-argument' => isTamil
+            ? 'ஆர்டர் விவரங்களை சரிபார்க்கவும்.'
+            : 'Please check the order details.',
+        'firebaseUnavailable' => firebaseUnavailable,
+        _ => isTamil
+            ? 'ஆர்டர் செய்ய முடியவில்லை. மீண்டும் முயற்சிக்கவும்.'
+            : "We couldn't place your order. Please try again.",
+      };
 }
 
 class _AppLocalizationsDelegate
