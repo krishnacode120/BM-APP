@@ -1,6 +1,5 @@
 plugins {
     id("com.android.application")
-    id("com.google.gms.google-services")
     // The Flutter Gradle Plugin must be applied after the Android and Kotlin Gradle plugins.
     id("dev.flutter.flutter-gradle-plugin")
 }
@@ -47,4 +46,17 @@ kotlin {
 
 flutter {
     source = "../.."
+}
+
+// Firebase is optional for the local catalog/demo fallback. Apply the Google
+// Services plugin only when a real development or production configuration is
+// supplied; do not substitute a fabricated google-services.json.
+val hasGoogleServicesConfig = listOf(
+    file("google-services.json"),
+    file("src/google-services.json"),
+    file("src/debug/google-services.json"),
+).any(File::isFile)
+
+if (hasGoogleServicesConfig) {
+    apply(plugin = "com.google.gms.google-services")
 }
