@@ -15,5 +15,9 @@
   "popularMaterials": "Popular Materials",
   "notifications": "Notifications",
   "orderUpdates": "Order updates",
-  "enableNotifications": "Enable notifications"
+  "enableNotifications": "Enable notifications",
+  "resendOtp": "Resend code",
+  "contactBm": "Contact BM",
+  "callBm": "Call BM",
+  "whatsappBm": "WhatsApp BM"
 }

@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 import '../../l10n/app_localizations.dart';
 import '../../models/product.dart';
 import '../cart/cart_notifier.dart';
+import '../settings/contact_bm.dart';
 import 'catalog_providers.dart';
 
 class LocationSelectorPage extends ConsumerWidget {
@@ -86,7 +87,7 @@ class _ProductDetailContent extends ConsumerWidget {
       const SizedBox(height: 16),
       ...product.specifications.entries
           .map((e) => ListTile(title: Text(e.key), trailing: Text(e.value))),
-      FilledButton.tonal(onPressed: () {}, child: Text(t.contactBm)),
+      const ContactBmButton(),
       const SizedBox(height: 12),
       FilledButton.icon(
           onPressed: product.canOrder && location != null && price != null

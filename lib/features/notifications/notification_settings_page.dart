@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../l10n/app_localizations.dart';
 import '../../services/notification_service.dart';
+import '../settings/contact_bm.dart';
 import 'notification_providers.dart';
 
 class NotificationSettingsPage extends ConsumerWidget {
@@ -45,6 +46,8 @@ class NotificationSettingsPage extends ConsumerWidget {
                       },
                 child: Text(t.enableNotifications),
               ),
+              const SizedBox(height: 8),
+              const ContactBmButton(compact: true),
             ],
           ),
         ),

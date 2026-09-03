@@ -23,6 +23,8 @@ Price updates preserve history by expiring active `productPrices` documents with
 
 Milestone 5 adds backend-owned structures: `users/{uid}/devices/{deviceId}` stores one protected FCM token mapping per device; `notificationJobs/{jobId}` is the FCM outbox; `notificationLogs/{jobId}` stores safe delivery results; `reportSyncJobs/{orderId}` is one current Graph/Excel job per order; and `reportSyncState/{orderId}` exposes safe reporting health to admins. Tokens, raw provider errors and secrets are never client-readable.
 
+`settings/app` is a separate customer-readable configuration document for `businessName`, `businessPhone`, `whatsappNumber`, `supportEmail`, `defaultCurrency` and `supportHours`. It is admin-write-only and must contain no credentials, admin claims or Microsoft/Firebase secret values.
+
 Required new indexes: `notificationJobs(status ASC, nextRetryAt ASC)`, `reportSyncJobs(status ASC, nextRetryAt ASC)`, and collection-group `devices(enabled ASC, role ASC)`.
 
 Required indexes:

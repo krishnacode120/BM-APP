@@ -46,6 +46,18 @@ class AppLocalizations {
       isTamil ? 'விலை விசாரிக்கவும்' : 'Price on request';
   String get minimumOrder => isTamil ? 'குறைந்தபட்ச ஆர்டர்' : 'Minimum order';
   String get contactBm => isTamil ? 'BM-ஐ தொடர்பு கொள்ளவும்' : 'Contact BM';
+  String get help => isTamil ? 'உதவி' : 'Help';
+  String get callBm => isTamil ? 'BM-ஐ அழைக்கவும்' : 'Call BM';
+  String get whatsappBm =>
+      isTamil ? 'WhatsApp-ல் தொடர்பு கொள்ளவும்' : 'WhatsApp BM';
+  String get emailBm => isTamil ? 'BM-க்கு மின்னஞ்சல்' : 'Email BM';
+  String get supportHours => isTamil ? 'உதவி நேரம்' : 'Support hours';
+  String get contactPending => isTamil
+      ? 'BM தொடர்பு விவரங்கள் இன்னும் அமைக்கப்படவில்லை.'
+      : 'BM contact details have not been configured yet.';
+  String get contactUnavailable => isTamil
+      ? 'தற்போது தொடர்பு வசதி கிடைக்கவில்லை.'
+      : 'Contact options are currently unavailable.';
   String get loading => isTamil ? 'ஏற்றுகிறது' : 'Loading';
   String get tryAgain => isTamil ? 'மீண்டும் முயற்சிக்கவும்' : 'Try again';
   String get available => isTamil ? 'கிடைக்கிறது' : 'Available';
@@ -128,6 +140,30 @@ class AppLocalizations {
   String get firebaseUnavailable => isTamil
       ? 'ஆர்டர் செய்ய Firebase development அமைப்பு தேவை.'
       : 'Order submission requires Firebase development configuration.';
+  String get resendOtp =>
+      isTamil ? 'குறியீட்டை மீண்டும் அனுப்பவும்' : 'Resend code';
+  String get otpInstruction => isTamil
+      ? 'உங்கள் மொபைல் எண்ணுக்கு அனுப்பப்பட்ட 6 இலக்க குறியீட்டை உள்ளிடவும்.'
+      : 'Enter the 6-digit code sent to your mobile number.';
+  String verifyPhone(String phone) =>
+      isTamil ? '$phone ஐச் சரிபார்க்கவும்' : 'Verify $phone';
+  String authError(String code) => switch (code) {
+        'firebaseUnavailable' => isTamil
+            ? 'உள்நுழைய Firebase development அமைப்பு தேவை.'
+            : 'Phone login requires Firebase development configuration.',
+        'invalidPhone' => isTamil
+            ? 'சரியான 10 இலக்க மொபைல் எண்ணை உள்ளிடவும்.'
+            : 'Enter a valid 10-digit mobile number.',
+        'invalidOtp' || 'invalid-verification-code' => isTamil
+            ? 'தவறான அல்லது காலாவதியான குறியீடு.'
+            : 'The code is invalid or expired.',
+        'too-many-requests' => isTamil
+            ? 'பல முயற்சிகள் செய்யப்பட்டுள்ளன. பிறகு முயற்சிக்கவும்.'
+            : 'Too many attempts. Please try again later.',
+        _ => isTamil
+            ? 'குறியீட்டை அனுப்ப அல்லது சரிபார்க்க முடியவில்லை. மீண்டும் முயற்சிக்கவும்.'
+            : 'Unable to send or verify the code. Please try again.',
+      };
   String unitLabel(String unit) => switch (unit) {
         'piece' => isTamil ? 'பீஸ்' : 'Piece',
         'bag' => isTamil ? 'மூட்டை' : 'Bag',

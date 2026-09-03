@@ -6,6 +6,7 @@ import '../../l10n/app_localizations.dart';
 import '../../models/order.dart';
 import '../cart/cart_notifier.dart';
 import '../catalog/catalog_providers.dart';
+import '../settings/contact_bm.dart';
 import 'order_providers.dart';
 
 class CheckoutPage extends ConsumerWidget {
@@ -64,6 +65,8 @@ class CheckoutPage extends ConsumerWidget {
         _CheckoutRow(label: t.estimatedTotal, value: '₹${cart.subtotal}'),
         const SizedBox(height: 8),
         Text(t.paymentNotice),
+        const SizedBox(height: 8),
+        const ContactBmButton(compact: true),
         if (checkout.errorCode != null)
           Padding(
             padding: const EdgeInsets.only(top: 12),
@@ -209,7 +212,7 @@ class OrderDetailBody extends StatelessWidget {
       if (order.customerNote?.isNotEmpty == true)
         Text('${t.orderNote}: ${order.customerNote}'),
       const SizedBox(height: 16),
-      FilledButton.tonal(onPressed: () {}, child: Text(t.contactBm)),
+      const ContactBmButton(),
     ]);
   }
 }

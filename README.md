@@ -51,4 +51,6 @@ npm run build
 
 See [docs/setup.md](docs/setup.md), [docs/architecture.md](docs/architecture.md), [docs/database.md](docs/database.md), [docs/security.md](docs/security.md), [docs/admin-guide.md](docs/admin-guide.md), [docs/notifications.md](docs/notifications.md), and [docs/reporting.md](docs/reporting.md).
 
+Before client testing, read [docs/phase-5-5-verification.md](docs/phase-5-5-verification.md), [docs/client-review-checklist.md](docs/client-review-checklist.md), and [docs/real-device-test-checklist.md](docs/real-device-test-checklist.md). The project is not production-ready until development Firebase/device verification is complete.
+
 The repository includes deliberately restrictive Firebase rules as a deployment-safe baseline. Expand them alongside the trusted Cloud Functions used for product, order and admin workflows; do not deploy permissive rules for development convenience.

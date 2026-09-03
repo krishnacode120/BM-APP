@@ -20,7 +20,8 @@ final GoRouter appRouter = GoRouter(
     GoRoute(path: '/login', builder: (_, __) => const LoginPage()),
     GoRoute(
         path: '/otp',
-        builder: (_, state) => OtpPage(phone: state.extra! as String)),
+        builder: (_, state) =>
+            OtpPage(arguments: state.extra! as OtpArguments)),
     GoRoute(path: '/home', builder: (_, __) => const HomeShell()),
     GoRoute(path: '/admin', builder: (_, __) => const AdminGatePage()),
     GoRoute(

@@ -15,5 +15,9 @@
   "popularMaterials": "பிரபலமான பொருட்கள்",
   "notifications": "அறிவிப்புகள்",
   "orderUpdates": "ஆர்டர் அறிவிப்புகள்",
-  "enableNotifications": "அறிவிப்புகளை இயக்கவும்"
+  "enableNotifications": "அறிவிப்புகளை இயக்கவும்",
+  "resendOtp": "குறியீட்டை மீண்டும் அனுப்பவும்",
+  "contactBm": "BM-ஐ தொடர்பு கொள்ளவும்",
+  "callBm": "BM-ஐ அழைக்கவும்",
+  "whatsappBm": "WhatsApp-ல் தொடர்பு கொள்ளவும்"
 }

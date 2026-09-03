@@ -39,6 +39,8 @@ describe("firestore security rules", () => {
       await db.collection("users").doc("user-a").collection("devices").doc("device-a").set({token: "secret-token", enabled: true});
       await db.collection("notificationJobs").doc("job-a").set({status: "PENDING"});
       await db.collection("reportSyncJobs").doc("order-a").set({status: "PENDING"});
+      await db.collection("settings").doc("app").set({businessName: "BM", businessPhone: "+91XXXXXXXXXX"});
+      await db.collection("settings").doc("internal").set({secret: "not-public"});
     });
   });
 
@@ -81,5 +83,12 @@ describe("firestore security rules", () => {
     await assertFails(userA.collection("reportSyncJobs").doc("order-a").update({status: "COMPLETED"}));
     await assertSucceeds(adminDb.collection("notificationJobs").doc("job-a").get());
     await assertSucceeds(adminDb.collection("reportSyncJobs").doc("order-a").get());
+  });
+
+  it("allows customer reads of public contact settings only", async () => {
+    const userA = testEnv.authenticatedContext("user-a").firestore();
+    await assertSucceeds(userA.collection("settings").doc("app").get());
+    await assertFails(userA.collection("settings").doc("app").update({businessPhone: "+919999999999"}));
+    await assertFails(userA.collection("settings").doc("internal").get());
   });
 });

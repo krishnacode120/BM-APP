@@ -1,4 +1,11 @@
+import 'dart:async';
+
 import 'package:firebase_auth/firebase_auth.dart';
+
+class AuthFailure implements Exception {
+  const AuthFailure(this.code);
+  final String code;
+}
 
 abstract interface class AuthService {
   Future<void> requestOtp(
@@ -16,13 +23,20 @@ class FirebasePhoneAuthService implements AuthService {
   Future<void> requestOtp(
       {required String phoneNumber,
       required void Function(String verificationId) onCodeSent}) {
-    return _auth.verifyPhoneNumber(
+    final completer = Completer<void>();
+    _auth.verifyPhoneNumber(
       phoneNumber: phoneNumber,
       verificationCompleted: (PhoneAuthCredential _) {},
-      verificationFailed: (FirebaseAuthException error) => throw error,
-      codeSent: (String verificationId, int? _) => onCodeSent(verificationId),
+      verificationFailed: (FirebaseAuthException error) {
+        if (!completer.isCompleted) completer.completeError(error);
+      },
+      codeSent: (String verificationId, int? _) {
+        onCodeSent(verificationId);
+        if (!completer.isCompleted) completer.complete();
+      },
       codeAutoRetrievalTimeout: (_) {},
     );
+    return completer.future;
   }
 
   @override
@@ -32,4 +46,19 @@ class FirebasePhoneAuthService implements AuthService {
         verificationId: verificationId, smsCode: smsCode);
     return _auth.signInWithCredential(credential);
   }
+}
+
+class UnavailableAuthService implements AuthService {
+  const UnavailableAuthService();
+
+  @override
+  Future<void> requestOtp(
+          {required String phoneNumber,
+          required void Function(String verificationId) onCodeSent}) =>
+      Future<void>.error(const AuthFailure('firebaseUnavailable'));
+
+  @override
+  Future<UserCredential> verifyOtp(
+          {required String verificationId, required String smsCode}) =>
+      Future<UserCredential>.error(const AuthFailure('firebaseUnavailable'));
 }
