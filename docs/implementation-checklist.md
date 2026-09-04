@@ -30,5 +30,5 @@
 - [ ] Validate all screens on physical small Android, typical Android and iPhone devices
 - [ ] Replace temporary platform launcher icons after final brand approval
 - [x] Keep `bm-app-74ddb` on Spark; live Storage/Functions capabilities are intentionally excluded by the client decision
-- [ ] Bootstrap a Firebase admin account using an approved real email (a username alone is not a Firebase email/password identity)
+- [x] Bootstrap the initial Firebase admin account with admin claims, an active profile and an audit record (account email is not stored in the repository)
 - [ ] Verify Firebase-authenticated customer/admin paths against `bm-app-74ddb` on a physical device

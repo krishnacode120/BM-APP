@@ -32,7 +32,7 @@ The responsive admin application requires an email/password Firebase session, an
 | Catalog | Live customer-shaped queries return 8 active categories, 4 active locations and 7 visible products through the deployed rules/indexes |
 | Storage | The project deliberately remains on Spark, so a bucket is not provisioned and live product-image upload is unavailable |
 | Functions | Backend code builds and tests locally, but callable order/admin/notification/reporting operations are deliberately not deployed while the project remains on Spark |
-| Admin bootstrap | Pending an approved real admin email, Firebase Auth account, custom admin claim and active Firestore admin profile; `raj123` may be a display name but is not a Firebase email login |
+| Admin bootstrap | Initial development admin created; `admin: true` / `role: admin` claims, active Firestore profile and audit record were verified; the account email is intentionally not stored in the repository |
 | FCM | Transactional code, templates, token lifecycle and tests exist; live device delivery is not verified |
 | APNs | Requires macOS/Xcode, Apple credentials, APNs key and a physical iPhone |
 | Microsoft Graph/Excel | Durable worker/retry/dead-letter code and unit tests exist; live workbook/secrets are not configured |
@@ -50,4 +50,4 @@ When Firebase is absent, `DemoCatalogRepository` supplies clearly development-on
 
 ## Remaining release blockers
 
-The client chose to retain the Spark plan. Storage uploads and Cloud Functions-backed order/admin/notification/reporting operations are therefore documented limitations rather than pending deployment work. Bootstrap an approved admin email account, verify the Spark-compatible authentication/catalog paths on a physical device, complete remaining contact values, and finish the applicable route-by-route device checklist. Production identifiers, launcher/store assets, signing, and legal content also require client approval.
+The client chose to retain the Spark plan. Storage uploads and Cloud Functions-backed order/admin/notification/reporting operations are therefore documented limitations rather than pending deployment work. Verify the Spark-compatible authentication/catalog/admin-read paths on a physical device, complete remaining contact values, and finish the applicable route-by-route device checklist. Production identifiers, launcher/store assets, signing, and legal content also require client approval.

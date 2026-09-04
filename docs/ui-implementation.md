@@ -52,4 +52,4 @@ npx firebase-tools emulators:exec --only firestore "cd functions && npm run test
 flutter build apk --debug
 ```
 
-Development Firebase client configuration is installed. Firestore rules/indexes are deployed and the catalog/settings seed is present. The project intentionally remains on Spark, so live Storage uploads and Functions-backed operations are known limitations. Admin bootstrap and physical-device acceptance remain required for the available scope.
+Development Firebase client configuration is installed. Firestore rules/indexes are deployed, the catalog/settings seed is present, and the initial admin claims/profile are bootstrapped. The project intentionally remains on Spark, so live Storage uploads and Functions-backed operations are known limitations. Physical-device acceptance remains required for the available scope.
