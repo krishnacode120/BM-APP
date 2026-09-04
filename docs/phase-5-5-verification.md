@@ -23,17 +23,22 @@ The responsive admin application requires an email/password Firebase session, an
 
 | Component | Current state |
 | --- | --- |
-| Android Firebase | `android/app/google-services.json` is absent |
-| iOS Firebase | `ios/Runner/GoogleService-Info.plist` is absent |
-| FlutterFire options | `lib/firebase_options.dart` is absent |
-| Development project | No Firebase project is selected/authenticated in this checkout |
-| Phone OTP/catalog/order/admin | Code-complete; live development-project test blocked by the missing configuration |
+| Android Firebase | `com.example.bm` is registered in `bm-app-74ddb`; the generated local `google-services.json` is installed and ignored by Git |
+| iOS Firebase | `com.example.bm` is registered in `bm-app-74ddb`; the generated local `GoogleService-Info.plist` is installed and ignored by Git |
+| FlutterFire options | Generated for Android/iOS in `lib/firebase_options.dart` and wired into app startup |
+| Development project | `bm-app-74ddb` is selected and the Firebase CLI is authenticated on this workstation |
+| Authentication | Email/password and Phone providers are enabled; the Android debug SHA-1/SHA-256 fingerprints are registered |
+| Firestore | The default database was created in immutable multi-region `nam5`; restrictive rules and indexes are deployed; 48 clearly identified development documents are seeded |
+| Catalog | Live customer-shaped queries return 8 active categories, 4 active locations and 7 visible products through the deployed rules/indexes |
+| Storage | The API is enabled, but the bucket cannot be provisioned on the current Spark plan; product upload remains blocked pending an explicitly approved Blaze upgrade |
+| Functions | Backend code builds and tests locally, but live callable order/admin/notification/reporting deployment remains blocked pending an explicitly approved Blaze upgrade |
+| Admin bootstrap | Pending an approved real admin email, Firebase Auth account, custom admin claim and active Firestore admin profile; `raj123` may be a display name but is not a Firebase email login |
 | FCM | Transactional code, templates, token lifecycle and tests exist; live device delivery is not verified |
 | APNs | Requires macOS/Xcode, Apple credentials, APNs key and a physical iPhone |
 | Microsoft Graph/Excel | Durable worker/retry/dead-letter code and unit tests exist; live workbook/secrets are not configured |
 | Contact settings | Approved BM phone is present in the development seed; WhatsApp, email and support hours still need approved values |
 
-The Firebase CLI is available locally through `npx firebase-tools`, but the machine is not authenticated. No deployment, admin bootstrap, real OTP, live push, or live Excel claim is made.
+Firebase CLI 15.29.0 and FlutterFire CLI 1.4.1 are installed and authenticated. Firestore rules/indexes are deployed and development data is seeded. No Functions/Storage deployment, admin bootstrap, real OTP, live push, or live Excel claim is made yet.
 
 ## Platform/device state
 
@@ -45,4 +50,4 @@ When Firebase is absent, `DemoCatalogRepository` supplies clearly development-on
 
 ## Remaining release blockers
 
-Provide/select a development Firebase project, add platform configuration, enable Phone Auth/Firestore/Storage/Functions/FCM, deploy rules/indexes/functions, bootstrap an approved admin, enter approved contact values, configure Graph secrets/workbook, and complete the route-by-route physical-device checklist. Production identifiers, launcher/store assets, signing, legal content, and production project separation also require client approval.
+Decide whether to upgrade the development project to Blaze before provisioning Storage and deploying Functions. Then bootstrap an approved admin email account, verify customer OTP and admin flows on a physical device, complete remaining contact values, configure APNs/FCM and Graph secrets/workbook, and finish the route-by-route device checklist. Production identifiers, launcher/store assets, signing, legal content, and production project separation also require client approval.

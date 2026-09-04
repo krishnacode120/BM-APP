@@ -41,4 +41,4 @@ Use this list with the client before any production project, final identifier, d
 - [ ] Reports/Excel configuration
 - [ ] Notification wording and delivery recipients
 
-Record approved values in `settings/app` only after development Firebase is configured. Contact phone numbers are customer support data, not Firebase admin identities.
+The approved phone `+917708538700` is in the development seed for `settings/app`. Complete the remaining approved contact values after Firestore is initialized. Contact phone numbers are customer support data, not Firebase admin identities.

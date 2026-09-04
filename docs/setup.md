@@ -1,8 +1,8 @@
 # Firebase and environment setup
 
-Create distinct Firebase projects for development, staging, and production. Configure each mobile platform with its own Firebase config file; these files are ignored by Git. Run FlutterFire CLI after the Flutter SDK is installed if generated options are preferred.
+Use distinct Firebase projects for development, staging, and production. Development currently uses `bm-app-74ddb`. Its Android/iOS apps and FlutterFire options are configured; the native config files remain local and ignored by Git.
 
-Enable Phone Authentication, add Android SHA-1/SHA-256 values, configure APNs for iOS, and limit authorized domains for web/admin. Use `--dart-define=BM_ENV=development|staging|production`; no credential belongs in source code.
+Email/password and Phone Authentication are enabled in development, and the Android debug SHA-1/SHA-256 values are registered. APNs/iOS device setup and authorized-domain review remain. Use `--dart-define=BM_ENV=development|staging|production`; no credential belongs in source code.
 
 For Milestone 3 order testing, configure Firebase Auth, Firestore, and Cloud Functions in a development project or emulator suite. Install backend dependencies from `functions/` with `npm install`, compile with `npm run build`, and deploy only to development until the flow is verified.
 
@@ -25,18 +25,18 @@ This requires Admin SDK credentials or a trusted Firebase environment. Never com
 
 ## Milestone 5 operational setup
 
-Configure only a development Firebase project first. Add Android `google-services.json` and iOS `GoogleService-Info.plist` (both ignored), enable Cloud Messaging, deploy rules/indexes/functions, then follow [notifications.md](notifications.md) for Android/iOS/APNs validation. Do not request notification permission on splash; BM requests it contextually after the customer's first successful order, with an order-update rationale.
+Configure only a development Firebase project first. The local Android `google-services.json`, iOS `GoogleService-Info.plist` (both ignored), and committed public `lib/firebase_options.dart` currently target `bm-app-74ddb`. Firestore rules/indexes are deployed and development seed data is installed. Storage provisioning and Functions deployment require an explicitly approved Blaze upgrade. Follow [notifications.md](notifications.md) for Android/iOS/APNs validation. Do not request notification permission on splash; BM requests it contextually after the customer's first successful order, with an order-update rationale.
 
 For Microsoft reporting, create the development workbook/tables before deploying workers and set the seven Graph values with `firebase functions:secrets:set`. Follow the least-privilege app registration and recovery procedure in [reporting.md](reporting.md). Missing credentials deliberately create a private failed sync state rather than a fake Excel success.
 
 ### Development Firebase workflow
 
-1. Create a Firebase project explicitly for development; its ID does not need to be `bm-dev`.
-2. Register Android using the currently temporary `com.example.bm`, download `google-services.json`, and place it in `android/app/`.
-3. Register iOS using the currently temporary `com.example.bm`, then add `GoogleService-Info.plist` to `ios/Runner` from macOS/Xcode.
-4. Run `flutterfire configure` only after agreeing the development identifiers; generated `firebase_options.dart` may be committed if it contains only Firebase public configuration.
-5. Enable Firestore, Storage and Phone Authentication; add Android SHA-1/SHA-256 fingerprints and authorized domains where applicable.
-6. Install Functions dependencies and deploy only to development: `firebase deploy --only firestore:rules,firestore:indexes,storage,functions`.
+1. The selected development project is `bm-app-74ddb`; its default Firestore database uses immutable multi-region `nam5`.
+2. Android and iOS are registered with the currently temporary identifier `com.example.bm`; their downloaded native configuration stays ignored by Git.
+3. `lib/firebase_options.dart` contains Firebase public configuration and is committed so Android/iOS startup is compile-safe.
+4. Email/password and Phone Authentication are enabled, and Android debug SHA-1/SHA-256 fingerprints are registered. Review authorized domains and complete iOS/APNs configuration before external testing.
+5. Firestore rules/indexes are deployed and 48 development category/product/location/price/settings documents have been seeded. Never rerun a development seed against production.
+6. After explicitly approving a Blaze upgrade, provision Storage and deploy only the development Functions/Storage rules: `firebase deploy --only storage,functions`.
 7. Create an admin with the trusted bootstrap script documented in [admin-guide.md](admin-guide.md).
 8. Seed only development data from a trusted shell:
 

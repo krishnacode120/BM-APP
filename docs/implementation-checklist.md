@@ -24,6 +24,11 @@
 - [x] Customer identity is sourced from the verified profile during trusted order creation
 - [x] Loading, empty, error and unavailable states use shared components
 - [x] Analyzer clean and automated Flutter suite passing
+- [x] Register Android/iOS Firebase apps and generate FlutterFire options for `bm-app-74ddb`
+- [x] Enable development Email/Password and Phone Authentication and register Android debug SHA fingerprints
+- [x] Deploy restrictive Firestore rules/indexes and seed 48 development catalog/settings documents
 - [ ] Validate all screens on physical small Android, typical Android and iPhone devices
 - [ ] Replace temporary platform launcher icons after final brand approval
-- [ ] Verify Firebase-authenticated customer/admin paths against development Firebase (configuration files not present in this checkout)
+- [ ] Provision Storage and deploy Functions after an explicitly approved Blaze upgrade
+- [ ] Bootstrap a Firebase admin account using an approved real email (a username alone is not a Firebase email/password identity)
+- [ ] Verify Firebase-authenticated customer/admin paths against `bm-app-74ddb` on a physical device

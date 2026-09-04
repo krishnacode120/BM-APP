@@ -34,8 +34,8 @@ Milestone 5 adds a durable operational outbox: FCM device-token registration, to
 1. Install Flutter (stable channel) and run `flutter doctor`.
 2. Run `flutter pub get` in this directory.
 3. Copy `.env.example` to `.env` if local tooling needs it. Do not commit it.
-4. Create Firebase development/staging/production projects. Add `google-services.json` under `android/app/` and `GoogleService-Info.plist` under `ios/Runner/` for the active environment.
-5. Enable Firebase Phone Authentication and configure Android SHA keys / iOS APNs as required.
+4. Development is configured for `bm-app-74ddb`. For another environment, register the platform apps and replace the ignored `google-services.json` / `GoogleService-Info.plist`, then regenerate `lib/firebase_options.dart` with FlutterFire CLI.
+5. Development Email/Password and Phone Authentication plus Android debug SHA keys are enabled. Configure iOS APNs before testing on an iPhone.
 6. Install backend dependencies with `npm install` in `functions/`, then run `npm run build`.
 7. Run `flutter run --dart-define=BM_ENV=development`.
 
