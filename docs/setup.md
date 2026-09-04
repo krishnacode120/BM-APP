@@ -32,7 +32,7 @@ For Microsoft reporting, create the development workbook/tables before deploying
 ### Development Firebase workflow
 
 1. The selected development project is `bm-app-74ddb`; its default Firestore database uses immutable multi-region `nam5`.
-2. Android and iOS are registered with the currently temporary identifier `com.example.bm`; their downloaded native configuration stays ignored by Git.
+2. Android and iOS are registered with the currently temporary identifier `com.example.bm`; their downloaded native configuration stays ignored by Git. The Xcode Runner target includes `GoogleService-Info.plist` in its resources when that local file is present.
 3. `lib/firebase_options.dart` contains non-secret Firebase project/app identifiers. API-key literals must not be committed. Normal mobile builds read the ignored native files; CI may inject `BM_FIREBASE_ANDROID_API_KEY` or `BM_FIREBASE_IOS_API_KEY` using `--dart-define` from its secret store.
 4. Email/password and Phone Authentication are enabled, and Android debug SHA-1/SHA-256 fingerprints are registered. Review authorized domains and complete iOS/APNs configuration before external testing.
 5. Firestore rules/indexes are deployed and 48 development category/product/location/price/settings documents have been seeded. Never rerun a development seed against production.
