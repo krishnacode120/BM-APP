@@ -63,6 +63,16 @@ class _CustomerAccessFormState extends ConsumerState<_CustomerAccessForm> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: <Widget>[
+                    if (!widget.signUp)
+                      Align(
+                        alignment: Alignment.centerRight,
+                        child: TextButton.icon(
+                          key: const Key('admin-login-link'),
+                          onPressed: () => context.push('/admin/login'),
+                          icon: const Icon(Icons.admin_panel_settings_outlined),
+                          label: Text(t.adminLogin),
+                        ),
+                      ),
                     const Center(child: BmLogo(width: 104)),
                     const SizedBox(height: 38),
                     Text(
