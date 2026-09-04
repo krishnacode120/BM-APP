@@ -1,8 +1,8 @@
 # BM — Building Materials Marketplace
 
-BM is a Flutter customer app foundation for purchasing and enquiring about construction materials. It supports English and Tamil, an onboarding flow, phone OTP authentication boundaries, location-aware product abstractions, and a lightweight marketplace home experience.
+BM is a bilingual Flutter application for customers to request construction materials and for BM administrators to manage the resulting operations. Customers use name-and-phone OTP authentication, browse location-priced materials, build an order request, submit it for manual verification, and call BM. There is no online payment flow.
 
-The current UI release applies the approved warm-white/peach/orange BM visual system across the customer and admin experiences. It includes original BM SVG branding, a locally bundled construction-material hero, persisted language and onboarding choices, responsive catalog/search/detail flows, wishlist and address preferences, customer support/profile surfaces, and a responsive admin shell. Trusted Firebase repositories and callable order/admin operations remain the data authority; development preview content is used only when Firebase is not configured.
+The current UI release applies the approved warm-white/peach/orange BM visual system across the customer and admin experiences. It includes original BM SVG branding, a locally bundled construction-material hero, persisted language and onboarding choices, responsive catalog/search/detail/order flows, a minimal customer profile, and a responsive operational admin application. Trusted Firebase repositories and callable order/admin operations remain the data authority; clearly marked development preview content is used only when Firebase is not configured and cannot create fake orders.
 
 ## Milestone status
 
@@ -12,7 +12,7 @@ Milestone 2 adds Firestore-backed category, product, location and pricing reposi
 
 Milestone 3 adds a real cart, user-scoped local cart persistence, checkout, order success, order history/detail screens, immutable order snapshots, and a callable Cloud Function (`createOrder`) for server-authoritative order creation. The client sends only product IDs, quantities, delivery/customer details, and an idempotency key; the backend derives the authenticated user, resolves current prices, validates inventory/minimum quantities/location, generates the order number, and writes the order.
 
-Milestone 4 adds a separated `/admin` experience, admin-claim route guard, dashboard, order operations, product/inventory/category/users/audit/settings foundations, trusted admin callable functions, admin bootstrap script, Firebase Storage product-media rules, and Firestore emulator rule tests.
+The completed admin surface at `/admin` requires both a Firebase custom admin claim and an active Firestore admin profile. It includes live customer/product/order/revenue metrics, customer detail and calling, guarded order/payment/final-total operations, product and category editing, product image upload, location pricing with price history, reports/revenue chart/top materials, CSV/report retries, business contact settings, password change, and logout.
 
 Milestone 5 adds a durable operational outbox: FCM device-token registration, token refresh/deactivation, customer/admin order-event push templates, safe deep links, invalid-token cleanup, controlled retries, Microsoft Graph/Excel table synchronization, retry/dead-letter tracking, a private Reports & Sync admin page, and an authenticated CSV fallback. Notifications and reporting are side effects; orders remain successful when either destination is unavailable.
 
@@ -21,7 +21,7 @@ Milestone 5 adds a durable operational outbox: FCM device-token registration, to
 - `lib/core` — configuration, theme, routing, reusable UI
 - `lib/features` — feature-owned UI and state
 - `lib/models` — typed domain entities
-- `lib/repositories` — data contracts and temporary development implementation
+- `lib/repositories` — Firebase-backed data contracts plus explicit no-Firebase preview adapters
 - `lib/services` — external platform/service boundaries
 - `functions` — Firebase callable backend for trusted order creation
 - `lib/l10n` — English and Tamil message catalogues

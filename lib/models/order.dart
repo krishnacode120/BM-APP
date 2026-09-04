@@ -4,29 +4,39 @@ import 'product.dart';
 
 enum OrderStatus {
   pending,
+  verified,
   confirmed,
   processing,
   ready,
-  outForDelivery,
-  delivered,
+  completed,
   cancelled
 }
 
-enum PaymentStatus {
-  pending,
-  verificationRequired,
-  verified,
-  failed,
-  refunded,
-  notRequired
+enum PaymentStatus { unpaid, partial, paid }
+
+OrderStatus orderStatusFromValue(String? value) {
+  final normalized = switch (value) {
+    'delivered' || 'outForDelivery' => 'completed',
+    _ => value,
+  };
+  return OrderStatus.values.firstWhere((status) => status.name == normalized,
+      orElse: () => OrderStatus.pending);
 }
 
-OrderStatus orderStatusFromValue(String? value) =>
-    OrderStatus.values.firstWhere((status) => status.name == value,
-        orElse: () => OrderStatus.pending);
-PaymentStatus paymentStatusFromValue(String? value) =>
-    PaymentStatus.values.firstWhere((status) => status.name == value,
-        orElse: () => PaymentStatus.pending);
+PaymentStatus paymentStatusFromValue(String? value) {
+  final normalized = switch (value) {
+    'verified' => 'paid',
+    'pending' ||
+    'verificationRequired' ||
+    'failed' ||
+    'refunded' ||
+    'notRequired' =>
+      'unpaid',
+    _ => value,
+  };
+  return PaymentStatus.values.firstWhere((status) => status.name == normalized,
+      orElse: () => PaymentStatus.unpaid);
+}
 
 class OrderItemSnapshot {
   const OrderItemSnapshot(
@@ -89,7 +99,15 @@ class BmOrder {
       required this.paymentStatus,
       required this.createdAt,
       required this.updatedAt,
-      this.customerNote});
+      this.customerNote,
+      this.adminNote,
+      this.confirmedSubtotal,
+      this.deliveryCharge = 0,
+      this.finalTotal,
+      this.verifiedAt,
+      this.verifiedBy,
+      this.paymentUpdatedAt,
+      this.paymentUpdatedBy});
   final String id;
   final String orderNumber;
   final String userId;
@@ -105,6 +123,19 @@ class BmOrder {
   final DateTime createdAt;
   final DateTime updatedAt;
   final String? customerNote;
+  final String? adminNote;
+  final num? confirmedSubtotal;
+  final num deliveryCharge;
+  final num? finalTotal;
+  final DateTime? verifiedAt;
+  final String? verifiedBy;
+  final DateTime? paymentUpdatedAt;
+  final String? paymentUpdatedBy;
+  num get displayTotal => finalTotal ?? estimatedSubtotal;
+  num get recognizedRevenue => paymentStatus == PaymentStatus.paid &&
+          orderStatus != OrderStatus.cancelled
+      ? displayTotal
+      : 0;
   Map<String, dynamic> toJson() => <String, dynamic>{
         'id': id,
         'orderNumber': orderNumber,
@@ -121,6 +152,14 @@ class BmOrder {
         'createdAt': createdAt.toIso8601String(),
         'updatedAt': updatedAt.toIso8601String(),
         'customerNote': customerNote,
+        'adminNote': adminNote,
+        'confirmedSubtotal': confirmedSubtotal,
+        'deliveryCharge': deliveryCharge,
+        'finalTotal': finalTotal,
+        'verifiedAt': verifiedAt?.toIso8601String(),
+        'verifiedBy': verifiedBy,
+        'paymentUpdatedAt': paymentUpdatedAt?.toIso8601String(),
+        'paymentUpdatedBy': paymentUpdatedBy,
       };
   factory BmOrder.fromJson(Map<String, dynamic> json, {String? id}) => BmOrder(
         id: id ?? json['id'] as String? ?? '',
@@ -141,6 +180,17 @@ class BmOrder {
         createdAt: _readDate(json['createdAt']),
         updatedAt: _readDate(json['updatedAt']),
         customerNote: json['customerNote'] as String?,
+        adminNote: json['adminNote'] as String?,
+        confirmedSubtotal: json['confirmedSubtotal'] as num?,
+        deliveryCharge: json['deliveryCharge'] as num? ?? 0,
+        finalTotal: json['finalTotal'] as num?,
+        verifiedAt:
+            json['verifiedAt'] == null ? null : _readDate(json['verifiedAt']),
+        verifiedBy: json['verifiedBy'] as String?,
+        paymentUpdatedAt: json['paymentUpdatedAt'] == null
+            ? null
+            : _readDate(json['paymentUpdatedAt']),
+        paymentUpdatedBy: json['paymentUpdatedBy'] as String?,
       );
 }
 

@@ -2,13 +2,13 @@ import * as admin from "firebase-admin";
 
 export type NotificationEvent =
   | "ORDER_CREATED"
+  | "ORDER_VERIFIED"
   | "ORDER_CONFIRMED"
   | "ORDER_PROCESSING"
   | "ORDER_READY"
-  | "ORDER_OUT_FOR_DELIVERY"
-  | "ORDER_DELIVERED"
+  | "ORDER_COMPLETED"
   | "ORDER_CANCELLED"
-  | "PAYMENT_VERIFIED"
+  | "PAYMENT_PAID"
   | "NEW_ORDER"
   | "LOW_STOCK";
 
@@ -122,11 +122,11 @@ export function enqueueLowStockNotification(
 
 export function notificationEventForStatus(status: string): NotificationEvent | null {
   const mapped: Record<string, NotificationEvent> = {
+    verified: "ORDER_VERIFIED",
     confirmed: "ORDER_CONFIRMED",
     processing: "ORDER_PROCESSING",
     ready: "ORDER_READY",
-    outForDelivery: "ORDER_OUT_FOR_DELIVERY",
-    delivered: "ORDER_DELIVERED",
+    completed: "ORDER_COMPLETED",
     cancelled: "ORDER_CANCELLED",
   };
   return mapped[status] ?? null;
@@ -141,13 +141,13 @@ export function notificationTemplate(
   const tamil = locale.toLowerCase().startsWith("ta");
   const customer: Record<Exclude<NotificationEvent, "NEW_ORDER" | "LOW_STOCK">, [string, string, string, string]> = {
     ORDER_CREATED: ["Order Submitted", "{order} has been received.", "ஆர்டர் சமர்ப்பிக்கப்பட்டது", "{order} பெறப்பட்டது."],
+    ORDER_VERIFIED: ["Order Verified", "{order} has been verified.", "ஆர்டர் சரிபார்க்கப்பட்டது", "{order} சரிபார்க்கப்பட்டது."],
     ORDER_CONFIRMED: ["Order Confirmed", "{order} has been confirmed.", "ஆர்டர் உறுதிப்படுத்தப்பட்டது", "{order} உறுதிப்படுத்தப்பட்டது."],
     ORDER_PROCESSING: ["Order Processing", "{order} is being prepared.", "ஆர்டர் செயல்பாட்டில்", "{order} தயாராகிறது."],
     ORDER_READY: ["Ready for Delivery", "{order} is ready for delivery.", "விநியோகத்திற்கு தயார்", "{order} விநியோகத்திற்கு தயாராக உள்ளது."],
-    ORDER_OUT_FOR_DELIVERY: ["Out for Delivery", "{order} is on the way.", "விநியோகத்திற்கு புறப்பட்டது", "{order} வழியில் உள்ளது."],
-    ORDER_DELIVERED: ["Order Delivered", "{order} has been delivered.", "ஆர்டர் வழங்கப்பட்டது", "{order} வழங்கப்பட்டது."],
+    ORDER_COMPLETED: ["Order Completed", "{order} has been completed.", "ஆர்டர் நிறைவடைந்தது", "{order} நிறைவடைந்தது."],
     ORDER_CANCELLED: ["Order Cancelled", "{order} has been cancelled.", "ஆர்டர் ரத்து செய்யப்பட்டது", "{order} ரத்து செய்யப்பட்டது."],
-    PAYMENT_VERIFIED: ["Payment Verified", "Payment for {order} has been verified.", "பணம் சரிபார்க்கப்பட்டது", "{order} க்கான பணம் சரிபார்க்கப்பட்டது."],
+    PAYMENT_PAID: ["Payment Received", "Payment for {order} is marked paid.", "பணம் பெறப்பட்டது", "{order} க்கான பணம் பெறப்பட்டது."],
   };
   if (type === "NEW_ORDER") {
     return {title: "New BM Order", body: `${orderNumber} — new customer order`};
@@ -500,7 +500,7 @@ export function orderReportRow(order: admin.firestore.DocumentData & {id: string
     String(order.phoneNumber ?? ""), String(order.locationName ?? ""), String(order.deliveryAddress ?? ""),
     items.map((item) => `${String(item.productName ?? "")} x${Number(item.quantity ?? 0)}`).join("; "),
     items.length, Number(order.estimatedSubtotal ?? 0), nullableNumber(order.confirmedSubtotal),
-    Number(order.deliveryCharge ?? 0), nullableNumber(order.finalTotal), String(order.paymentStatus ?? "pending"),
+    Number(order.deliveryCharge ?? 0), nullableNumber(order.finalTotal), String(order.paymentStatus ?? "unpaid"),
     String(order.orderStatus ?? "pending"), String(order.customerNote ?? ""), String(order.adminNote ?? ""), isoDate(order.updatedAt),
   ];
 }

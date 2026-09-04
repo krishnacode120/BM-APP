@@ -28,7 +28,9 @@ class FirebasePhoneAuthService implements AuthService {
       phoneNumber: phoneNumber,
       verificationCompleted: (PhoneAuthCredential _) {},
       verificationFailed: (FirebaseAuthException error) {
-        if (!completer.isCompleted) completer.completeError(error);
+        if (!completer.isCompleted) {
+          completer.completeError(AuthFailure(error.code));
+        }
       },
       codeSent: (String verificationId, int? _) {
         onCodeSent(verificationId);
@@ -41,10 +43,14 @@ class FirebasePhoneAuthService implements AuthService {
 
   @override
   Future<UserCredential> verifyOtp(
-      {required String verificationId, required String smsCode}) {
-    final PhoneAuthCredential credential = PhoneAuthProvider.credential(
-        verificationId: verificationId, smsCode: smsCode);
-    return _auth.signInWithCredential(credential);
+      {required String verificationId, required String smsCode}) async {
+    try {
+      final PhoneAuthCredential credential = PhoneAuthProvider.credential(
+          verificationId: verificationId, smsCode: smsCode);
+      return await _auth.signInWithCredential(credential);
+    } on FirebaseAuthException catch (error) {
+      throw AuthFailure(error.code);
+    }
   }
 }
 

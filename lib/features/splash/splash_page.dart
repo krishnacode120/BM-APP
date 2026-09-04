@@ -8,6 +8,7 @@ import '../../core/state/app_preferences.dart';
 import '../../core/theme/bm_theme.dart';
 import '../../core/widgets/bm_components.dart';
 import '../../l10n/app_localizations.dart';
+import '../auth/auth_providers.dart';
 
 class SplashPage extends ConsumerStatefulWidget {
   const SplashPage({super.key});
@@ -25,6 +26,7 @@ class _SplashPageState extends ConsumerState<SplashPage>
   Timer? _timer;
   bool _minimumElapsed = false;
   bool _navigated = false;
+  bool _checkingSession = false;
 
   @override
   void initState() {
@@ -42,17 +44,34 @@ class _SplashPageState extends ConsumerState<SplashPage>
     super.dispose();
   }
 
-  void _routeIfReady() {
+  Future<void> _routeIfReady() async {
     final preferences = ref.read(appPreferencesProvider);
-    if (!mounted || _navigated || !_minimumElapsed || !preferences.isLoaded) {
+    if (!mounted ||
+        _navigated ||
+        _checkingSession ||
+        !_minimumElapsed ||
+        !preferences.isLoaded) {
       return;
     }
-    _navigated = true;
-    context.go(!preferences.hasSelectedLanguage
-        ? '/language'
-        : !preferences.onboardingComplete
-            ? '/onboarding'
-            : '/login');
+    if (!preferences.hasSelectedLanguage || !preferences.onboardingComplete) {
+      _navigated = true;
+      context
+          .go(!preferences.hasSelectedLanguage ? '/language' : '/onboarding');
+      return;
+    }
+    _checkingSession = true;
+    try {
+      final customer = await ref.read(currentCustomerProvider.future);
+      if (!mounted || _navigated) return;
+      _navigated = true;
+      context.go(customer == null ? '/login' : '/home');
+    } catch (_) {
+      if (!mounted || _navigated) return;
+      _navigated = true;
+      context.go('/login');
+    } finally {
+      _checkingSession = false;
+    }
   }
 
   @override

@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../features/admin/admin_pages.dart';
@@ -7,7 +8,6 @@ import '../../features/cart/cart_pages.dart';
 import '../../features/auth/otp_page.dart';
 import '../../features/catalog/catalog_pages.dart';
 import '../../features/home/home_shell.dart';
-import '../../features/notifications/notification_settings_page.dart';
 import '../../features/onboarding/onboarding_page.dart';
 import '../../features/profile/customer_pages.dart';
 import '../../features/orders/order_pages.dart';
@@ -22,38 +22,37 @@ final GoRouter appRouter = GoRouter(
         path: '/language', builder: (_, __) => const LanguageSelectionPage()),
     GoRoute(path: '/onboarding', builder: (_, __) => const OnboardingPage()),
     GoRoute(path: '/login', builder: (_, __) => const LoginPage()),
+    GoRoute(path: '/signup', builder: (_, __) => const SignUpPage()),
     GoRoute(
         path: '/otp',
         builder: (_, state) =>
             OtpPage(arguments: state.extra! as OtpArguments)),
-    GoRoute(path: '/home', builder: (_, __) => const HomeShell()),
-    GoRoute(path: '/categories', builder: (_, __) => const CategoriesPage()),
-    GoRoute(path: '/search', builder: (_, __) => const SearchPage()),
-    GoRoute(path: '/profile', builder: (_, __) => const ProfilePage()),
-    GoRoute(path: '/wishlist', builder: (_, __) => const WishlistPage()),
-    GoRoute(path: '/addresses', builder: (_, __) => const AddressesPage()),
-    GoRoute(path: '/settings', builder: (_, __) => const SettingsPage()),
     GoRoute(
-        path: '/notifications',
-        builder: (_, __) => const NotificationCenterPage()),
+        path: '/home',
+        pageBuilder: (_, state) => _fadePage(state, const HomeShell())),
+    GoRoute(
+        path: '/categories',
+        pageBuilder: (_, state) => _fadePage(state, const CategoriesPage())),
+    GoRoute(
+        path: '/search',
+        pageBuilder: (_, state) => _fadePage(state, const SearchPage())),
+    GoRoute(
+        path: '/profile',
+        pageBuilder: (_, state) => _fadePage(state, const ProfilePage())),
     GoRoute(path: '/support', builder: (_, __) => const SupportPage()),
-    GoRoute(path: '/about', builder: (_, __) => const AboutPage()),
     GoRoute(
-        path: '/orders/:id/tracking',
-        builder: (_, state) =>
-            OrderTrackingPage(orderId: state.pathParameters['id']!)),
-    GoRoute(path: '/admin', builder: (_, __) => const AdminGatePage()),
+        path: '/admin',
+        pageBuilder: (_, state) => _fadePage(state, const AdminGatePage())),
     GoRoute(path: '/admin/login', builder: (_, __) => const AdminLoginPage()),
     GoRoute(
         path: '/admin/orders/:id',
         builder: (_, state) =>
             AdminGatePage(orderId: state.pathParameters['id']!)),
-    GoRoute(
-        path: '/notification-settings',
-        builder: (_, __) => const NotificationSettingsPage()),
     GoRoute(path: '/cart', builder: (_, __) => const CartPage()),
     GoRoute(path: '/checkout', builder: (_, __) => const CheckoutPage()),
-    GoRoute(path: '/orders', builder: (_, __) => const OrderHistoryPage()),
+    GoRoute(
+        path: '/orders',
+        pageBuilder: (_, state) => _fadePage(state, const OrderHistoryPage())),
     GoRoute(
         path: '/orders/:id',
         builder: (_, state) =>
@@ -75,3 +74,14 @@ final GoRouter appRouter = GoRouter(
             ProductDetailPage(productId: state.pathParameters['id']!)),
   ],
 );
+
+CustomTransitionPage<void> _fadePage(GoRouterState state, Widget child) =>
+    CustomTransitionPage<void>(
+      key: state.pageKey,
+      child: child,
+      transitionDuration: const Duration(milliseconds: 240),
+      transitionsBuilder: (_, animation, __, child) => FadeTransition(
+        opacity: CurvedAnimation(parent: animation, curve: Curves.easeOut),
+        child: child,
+      ),
+    );

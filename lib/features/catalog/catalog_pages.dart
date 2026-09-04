@@ -11,7 +11,6 @@ import '../../l10n/app_localizations.dart';
 import '../../models/category.dart';
 import '../../models/product.dart';
 import '../cart/cart_notifier.dart';
-import '../profile/customer_pages.dart';
 import '../settings/contact_bm.dart';
 import 'catalog_providers.dart';
 
@@ -157,9 +156,9 @@ class CategoriesPage extends ConsumerWidget {
             icon: const Icon(Icons.search_rounded),
           ),
           IconButton(
-            tooltip: t.cart,
+            tooltip: t.orderSummary,
             onPressed: () => context.push('/cart'),
-            icon: const Icon(Icons.shopping_bag_outlined),
+            icon: const Icon(Icons.playlist_add_check_rounded),
           ),
         ],
       ),
@@ -181,8 +180,11 @@ class CategoriesPage extends ConsumerWidget {
                           childAspectRatio: 1.18,
                         ),
                         itemCount: items.length,
-                        itemBuilder: (_, index) =>
-                            _CategoryCard(category: items[index]),
+                        itemBuilder: (_, index) => BmEntrance(
+                          delay: Duration(
+                              milliseconds: (index * 35).clamp(0, 280)),
+                          child: _CategoryCard(category: items[index]),
+                        ),
                       );
                     },
                   ),
@@ -243,9 +245,9 @@ class CategoryProductsPage extends ConsumerWidget {
               icon: const Icon(Icons.search_rounded),
             ),
             IconButton(
-              tooltip: AppLocalizations.of(context).cart,
+              tooltip: AppLocalizations.of(context).orderSummary,
               onPressed: () => context.push('/cart'),
-              icon: const Icon(Icons.shopping_bag_outlined),
+              icon: const Icon(Icons.playlist_add_check_rounded),
             ),
           ],
         ),
@@ -430,24 +432,10 @@ class _ProductDetailPageState extends ConsumerState<ProductDetailPage> {
       appBar: AppBar(
         title: Text(t.productDetails),
         actions: <Widget>[
-          Consumer(builder: (_, ref, __) {
-            final saved =
-                ref.watch(wishlistProvider).contains(widget.productId);
-            return IconButton(
-              tooltip: t.wishlist,
-              onPressed: () =>
-                  ref.read(wishlistProvider.notifier).toggle(widget.productId),
-              icon: Icon(
-                  saved
-                      ? Icons.favorite_rounded
-                      : Icons.favorite_border_rounded,
-                  color: saved ? BmColors.orange : null),
-            );
-          }),
           IconButton(
-            tooltip: t.cart,
+            tooltip: t.orderSummary,
             onPressed: () => context.push('/cart'),
-            icon: const Icon(Icons.shopping_bag_outlined),
+            icon: const Icon(Icons.playlist_add_check_rounded),
           ),
         ],
       ),
@@ -578,9 +566,14 @@ class _ProductDetailPageState extends ConsumerState<ProductDetailPage> {
         ),
         if (total != null) ...<Widget>[
           const SizedBox(height: 14),
+          Text(
+            '₹${_money(price!.price)} × $quantity',
+            style: Theme.of(context).textTheme.bodySmall,
+          ),
+          const SizedBox(height: 4),
           Row(
             children: <Widget>[
-              Text(t.total),
+              Text(t.estimatedOrderValue),
               const Spacer(),
               Text('₹${_money(total)}',
                   style: Theme.of(context).textTheme.titleLarge),
@@ -615,26 +608,25 @@ class _ProductDetailPageState extends ConsumerState<ProductDetailPage> {
           ),
         ],
         const SizedBox(height: 24),
-        const ContactBmButton(),
+        const CallAdminButton(),
         const SizedBox(height: 12),
-        BmPrimaryButton(
-          label: price == null ? t.contactBm : t.addToCart,
-          icon: price == null
-              ? Icons.chat_bubble_outline_rounded
-              : Icons.add_shopping_cart_rounded,
-          onPressed: product.canOrder && location != null && price != null
-              ? () {
-                  final error = ref.read(cartProvider.notifier).add(
-                        product,
-                        quantity: quantity,
-                        locationId: location.id,
-                        price: price.price,
-                      );
-                  ScaffoldMessenger.of(context).showSnackBar(
-                      SnackBar(content: Text(error ?? t.addedToCart)));
-                }
-              : null,
-        ),
+        if (price != null)
+          BmPrimaryButton(
+            label: t.addToOrder,
+            icon: Icons.playlist_add_rounded,
+            onPressed: product.canOrder && location != null
+                ? () {
+                    final error = ref.read(cartProvider.notifier).add(
+                          product,
+                          quantity: quantity,
+                          locationId: location.id,
+                          price: price.price,
+                        );
+                    ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(content: Text(error ?? t.addedToOrder)));
+                  }
+                : null,
+          ),
       ],
     );
   }
@@ -685,9 +677,12 @@ class CatalogProductList extends StatelessWidget {
               padding: const EdgeInsets.only(bottom: 4),
               itemCount: items.length,
               separatorBuilder: (_, __) => const SizedBox(width: 12),
-              itemBuilder: (_, index) => SizedBox(
-                  width: 210,
-                  child: ProductCard(product: items[index], compact: true)),
+              itemBuilder: (_, index) => BmEntrance(
+                delay: Duration(milliseconds: (index * 35).clamp(0, 280)),
+                child: SizedBox(
+                    width: 210,
+                    child: ProductCard(product: items[index], compact: true)),
+              ),
             );
           }
           return LayoutBuilder(
@@ -702,15 +697,20 @@ class CatalogProductList extends StatelessWidget {
                     childAspectRatio: .78,
                   ),
                   itemCount: items.length,
-                  itemBuilder: (_, index) =>
-                      ProductCard(product: items[index], compact: true),
+                  itemBuilder: (_, index) => BmEntrance(
+                    delay: Duration(milliseconds: (index * 35).clamp(0, 280)),
+                    child: ProductCard(product: items[index], compact: true),
+                  ),
                 );
               }
               return ListView.separated(
                 padding: const EdgeInsets.all(16),
                 itemCount: items.length,
                 separatorBuilder: (_, __) => const SizedBox(height: 10),
-                itemBuilder: (_, index) => ProductCard(product: items[index]),
+                itemBuilder: (_, index) => BmEntrance(
+                  delay: Duration(milliseconds: (index * 35).clamp(0, 280)),
+                  child: ProductCard(product: items[index]),
+                ),
               );
             },
           );

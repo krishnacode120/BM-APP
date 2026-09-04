@@ -18,7 +18,7 @@ class CartPage extends ConsumerWidget {
     final cart = ref.watch(cartProvider);
     final location = ref.watch(selectedLocationProvider).valueOrNull;
     return Scaffold(
-      appBar: AppBar(title: Text(t.cart)),
+      appBar: AppBar(title: Text(t.orderSummary)),
       body: cart.items.isEmpty
           ? _EmptyCart(t: t)
           : ListView(
@@ -53,11 +53,11 @@ class CartPage extends ConsumerWidget {
                     unawaited(context.push('/checkout'));
                   } else {
                     ScaffoldMessenger.of(context)
-                        .showSnackBar(SnackBar(content: Text(t.reviewCart)));
+                        .showSnackBar(SnackBar(content: Text(t.reviewOrder)));
                   }
                 },
                 icon: const Icon(Icons.lock_outline),
-                label: Text(t.checkout),
+                label: Text(t.continueToSubmit),
               ),
             ),
     );
@@ -234,9 +234,10 @@ class _EmptyCart extends StatelessWidget {
           child: Column(mainAxisSize: MainAxisSize.min, children: [
             const Icon(Icons.shopping_cart_outlined, size: 56),
             const SizedBox(height: 12),
-            Text(t.cartEmpty, style: Theme.of(context).textTheme.titleLarge),
+            Text(t.orderListEmpty,
+                style: Theme.of(context).textTheme.titleLarge),
             const SizedBox(height: 8),
-            Text(t.emptyCartMessage, textAlign: TextAlign.center),
+            Text(t.emptyOrderMessage, textAlign: TextAlign.center),
             const SizedBox(height: 16),
             FilledButton(
                 onPressed: () => context.go('/home'),

@@ -58,6 +58,48 @@ describe("firestore security rules", () => {
     await assertFails(userA.collection("auditLogs").doc("audit-b").set({action: "X"}));
   });
 
+  it("allows a verified phone customer profile without privilege escalation", async () => {
+    const customer = testEnv.authenticatedContext("customer-a", {
+      phone_number: "+919876543210",
+    }).firestore();
+    const profile = customer.collection("users").doc("customer-a");
+    await assertSucceeds(profile.set({
+      uid: "customer-a",
+      name: "Customer",
+      phoneNumber: "+919876543210",
+      role: "customer",
+      phoneVerified: true,
+      isActive: true,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    }));
+    await assertSucceeds(profile.update({name: "Updated Customer", updatedAt: new Date()}));
+    await assertFails(profile.update({role: "admin"}));
+    await assertFails(profile.update({phoneNumber: "+919999999999"}));
+  });
+
+  it("rejects spoofed customer profile phone and role", async () => {
+    const customer = testEnv.authenticatedContext("customer-b", {
+      phone_number: "+919876543210",
+    }).firestore();
+    const base = {
+      uid: "customer-b",
+      name: "Customer",
+      phoneNumber: "+919999999999",
+      role: "customer",
+      phoneVerified: true,
+      isActive: true,
+      createdAt: new Date(),
+      updatedAt: new Date(),
+    };
+    await assertFails(customer.collection("users").doc("customer-b").set(base));
+    await assertFails(customer.collection("users").doc("customer-b").set({
+      ...base,
+      phoneNumber: "+919876543210",
+      role: "admin",
+    }));
+  });
+
   it("allows admin claim catalog writes and audit reads", async () => {
     const adminDb = testEnv.authenticatedContext("admin-a", {admin: true, role: "admin"}).firestore();
     await assertSucceeds(adminDb.collection("products").doc("product-a").update({name: "X"}));

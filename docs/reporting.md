@@ -34,6 +34,8 @@ The worker scans for the stable `Order ID` / `Order Item Key` and patches an exi
 
 ## CSV fallback and live test
 
-`exportOrdersCsv` is an authenticated, admin-only callable that produces at most 500 authoritative order rows. The admin Reports screen can copy its CSV to the clipboard. It is a fallback, not a replacement for Excel sync; do not host it at a public URL.
+`exportOrdersCsv` remains the authenticated, admin-only export callable and accepts an allow-listed report type. It can produce orders, paid/non-cancelled revenue, products, or customers CSV content, each capped at 500 authoritative records. Flutter prefixes clipboard exports with a Unicode BOM so Tamil text opens correctly in common spreadsheet tools. This is a fallback, not a replacement for Excel sync; do not host it at a public URL.
+
+The Admin Reports screen derives total/completed/cancelled/pending orders, paid and unpaid totals, recognized revenue, daily chart points, and top-material quantity/order-count/revenue from at most the latest 500 orders. Today, 7-day, 30-day and custom (up to one year per chart render) filters operate on that retrieved source set. Firestore remains authoritative; if the business grows past this bounded operational view, replace it with scheduled aggregate documents or a warehouse rather than removing the read bound.
 
 Create the development workbook/tables, set all seven secrets, deploy Functions/rules/indexes, create an order, then update its status and verify the same row changes. Temporarily remove a secret: order creation must still work while Reports & Sync shows `FAILED`; restore it, retry and verify no duplicate row appears.

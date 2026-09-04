@@ -1,4 +1,5 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
+import 'dart:async';
+
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -9,9 +10,16 @@ import '../../services/auth_service.dart';
 import 'auth_providers.dart';
 
 class OtpArguments {
-  const OtpArguments({required this.phone, required this.verificationId});
+  const OtpArguments({
+    required this.phone,
+    required this.verificationId,
+    required this.fullName,
+    required this.createAccount,
+  });
   final String phone;
   final String verificationId;
+  final String fullName;
+  final bool createAccount;
 }
 
 class OtpPage extends ConsumerStatefulWidget {
@@ -28,9 +36,18 @@ class _OtpPageState extends ConsumerState<OtpPage> {
   bool isVerifying = false;
   bool isResending = false;
   String? errorCode;
+  int resendSeconds = 30;
+  Timer? resendTimer;
+
+  @override
+  void initState() {
+    super.initState();
+    _startResendCountdown();
+  }
 
   @override
   void dispose() {
+    resendTimer?.cancel();
     code.dispose();
     super.dispose();
   }
@@ -61,8 +78,13 @@ class _OtpPageState extends ConsumerState<OtpPage> {
                         style: TextStyle(
                             color: Theme.of(context).colorScheme.error)),
                   TextButton(
-                      onPressed: isResending ? null : _resend,
-                      child: Text(isResending ? t.loading : t.resendOtp)),
+                      onPressed:
+                          isResending || resendSeconds > 0 ? null : _resend,
+                      child: Text(isResending
+                          ? t.loading
+                          : resendSeconds > 0
+                              ? t.resendOtpIn(resendSeconds)
+                              : t.resendOtp)),
                   const Spacer(),
                   FilledButton(
                       onPressed: isVerifying ? null : _verify,
@@ -90,17 +112,12 @@ class _OtpPageState extends ConsumerState<OtpPage> {
           .verifyOtp(verificationId: verificationId, smsCode: code.text.trim());
       final user = credential.user;
       if (user != null && Firebase.apps.isNotEmpty) {
-        try {
-          await FirebaseFirestore.instance
-              .collection('users')
-              .doc(user.uid)
-              .set({
-            'phoneNumber': user.phoneNumber ?? widget.arguments.phone,
-            'updatedAt': FieldValue.serverTimestamp(),
-          }, SetOptions(merge: true));
-        } on FirebaseException {
-          // The profile is a display mirror; login authority stays in Auth.
-        }
+        await ref.read(customerRepositoryProvider).saveVerifiedCustomer(
+              user: user,
+              name: widget.arguments.fullName,
+              phoneNumber: widget.arguments.phone,
+            );
+        ref.invalidate(currentCustomerProvider);
       }
       if (mounted) context.go('/home');
     } on AuthFailure catch (error) {
@@ -122,6 +139,7 @@ class _OtpPageState extends ConsumerState<OtpPage> {
           phoneNumber: widget.arguments.phone,
           onCodeSent: (value) {
             verificationId = value;
+            if (mounted) _startResendCountdown();
           });
     } on AuthFailure catch (error) {
       if (mounted) setState(() => errorCode = error.code);
@@ -130,5 +148,18 @@ class _OtpPageState extends ConsumerState<OtpPage> {
     } finally {
       if (mounted) setState(() => isResending = false);
     }
+  }
+
+  void _startResendCountdown() {
+    resendTimer?.cancel();
+    setState(() => resendSeconds = 30);
+    resendTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (!mounted || resendSeconds <= 1) {
+        timer.cancel();
+        if (mounted) setState(() => resendSeconds = 0);
+        return;
+      }
+      setState(() => resendSeconds--);
+    });
   }
 }

@@ -1,52 +1,55 @@
-# BM reference UI implementation
+# BM customer and admin UI
 
 ## Visual system
 
-The interface uses a warm white canvas, peach support surfaces and BM orange for primary actions. Shared tokens are defined in `lib/core/theme/bm_theme.dart`. Cards use subtle borders, 12–24 px radii and low shadows. Inventory uses text and icons/chips in addition to colour.
+BM uses a warm white canvas, peach support surfaces, and BM orange for primary actions. Shared tokens live in `lib/core/theme/bm_theme.dart`; reusable cards, states, animations, skeletons, logo treatments, and buttons live in `lib/core/widgets/bm_components.dart`. Inventory and order states always combine text/icons with colour.
 
-Branding is provided as reusable SVG wordmark, inverse wordmark and compact mark. The promotional/onboarding material image is stored locally; provenance is recorded in `ASSET_SOURCES.md`.
-
-## Customer route inventory
+## Customer routes
 
 - `/splash`, `/language`, `/onboarding`
-- `/login`, `/otp`
+- `/login`, `/signup`, `/otp`
 - `/home`, `/categories`, `/category/:id`, `/search`
-- `/product/:id`, `/wishlist`, `/locations`
+- `/product/:id`, `/locations`
 - `/cart`, `/checkout`, `/order-success`
-- `/orders`, `/orders/:id`, `/orders/:id/tracking`
-- `/profile`, `/addresses`, `/notifications`, `/notification-settings`
-- `/settings`, `/support`, `/about`
+- `/orders`, `/orders/:id`
+- `/profile`, `/support`
 
-## Admin route inventory
+Customer identity is deliberately name plus Indian mobile number verified by Firebase phone OTP. There are no customer passwords, social login, wishlist, coupons, online payment, address book, rider workflow, map tracking, or fake delivery tracking routes.
+
+## Admin routes
 
 - `/admin/login` performs Firebase email/password sign-in.
-- `/admin` and `/admin/orders/:id` remain behind the custom-claim gate.
-- The responsive shell exposes dashboard, orders, products, categories, users, delivery, approvals, audit, reports and settings.
+- `/admin` and `/admin/orders/:id` require both an active admin Firestore profile and an admin custom claim.
+- The responsive shell exposes Dashboard, Orders, Customers, Products, Categories, Reports, and Settings.
 
-## Responsive behavior
+The admin screens operate on Firestore/Storage/Functions data for customer lookup and calling, guarded status/payment/final-value changes, catalog and price history, inventory, CSV/reporting, sync recovery, contact settings, password change, and logout.
 
-- Customer content uses flexible wraps/grids and maximum-width constraints rather than fixed phone widths.
-- Category and product grids increase columns on wider windows.
-- The admin shell uses a drawer below 850 px and a navigation rail on wider layouts.
-- Safe areas protect bottom actions and text is allowed to wrap for Tamil.
-- All primary controls retain Material minimum touch targets and semantic tooltips/labels.
+## Responsive and accessibility behavior
 
-## Data and demo boundaries
+- Customer content uses flexible grids, wraps, and maximum-width constraints rather than fixed phone widths.
+- Admin navigation changes from a drawer to a rail on wider layouts.
+- Safe areas protect bottom actions, text wraps for Tamil, and controls keep Material touch targets.
+- Loading skeletons, localized empty/error states, retry actions, semantic labels, and non-colour status text are used throughout.
 
-When Firebase is configured, catalog, pricing, order and admin providers use the existing production-shaped Firebase repositories. When Firebase is absent, the repository provider exposes identifiable development categories/products/locations so the interface can be reviewed. The login screen labels this limitation and allows UI preview; checkout still cannot create a fake confirmed order.
+## Data and development boundary
 
-Recent searches, wishlist IDs and saved addresses use `SharedPreferences`. These are local preference features, not claims of cloud synchronization. Delivery assignment and approval screens are prepared UI foundations and state that trusted backend integration is pending.
+With Firebase configured, catalog, pricing, orders, settings, and admin features use production-shaped Firebase repositories. Without Firebase, only the clearly identified catalog preview adapter is available; OTP, admin access, media upload, and order submission never report fake success.
 
 ## Verification
 
 Run:
 
 ```powershell
+flutter clean
 flutter pub get
 dart format .
 flutter analyze
 flutter test
+cd functions
+npm test
+cd ..
+npx firebase-tools emulators:exec --only firestore "cd functions && npm run test:rules"
 flutter build apk --debug
 ```
 
-Development Firebase and real-device acceptance are still required before production release.
+Development Firebase configuration and physical-device acceptance remain required before production release.

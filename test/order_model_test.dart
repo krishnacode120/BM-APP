@@ -26,7 +26,7 @@ void main() {
     items: [item],
     estimatedSubtotal: 8000,
     orderStatus: OrderStatus.pending,
-    paymentStatus: PaymentStatus.pending,
+    paymentStatus: PaymentStatus.unpaid,
     createdAt: DateTime(2026, 9, 1),
     updatedAt: DateTime(2026, 9, 1),
     customerNote: 'Deliver before 10 AM',
@@ -63,5 +63,26 @@ void main() {
     expect(request.containsKey('userId'), isFalse);
     expect(
         (request['items'] as List).single.containsKey('priceAtOrder'), isFalse);
+  });
+
+  test('legacy order states map to the narrowed business states', () {
+    expect(orderStatusFromValue('delivered'), OrderStatus.completed);
+    expect(orderStatusFromValue('outForDelivery'), OrderStatus.completed);
+    expect(paymentStatusFromValue('verified'), PaymentStatus.paid);
+    expect(paymentStatusFromValue('pending'), PaymentStatus.unpaid);
+  });
+
+  test('revenue is recognized only for paid, non-cancelled orders', () {
+    final paid = BmOrder.fromJson(<String, dynamic>{
+      ...order.toJson(),
+      'paymentStatus': 'paid',
+      'finalTotal': 8200,
+    });
+    final cancelled = BmOrder.fromJson(<String, dynamic>{
+      ...paid.toJson(),
+      'orderStatus': 'cancelled',
+    });
+    expect(paid.recognizedRevenue, 8200);
+    expect(cancelled.recognizedRevenue, 0);
   });
 }

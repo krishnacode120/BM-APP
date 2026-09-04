@@ -12,7 +12,24 @@ service cloud.firestore {
 
     match /users/{userId} {
       allow read: if signedIn() && (request.auth.uid == userId || isAdmin());
-      allow create, update: if signedIn() && request.auth.uid == userId;
+      allow create: if signedIn() && request.auth.uid == userId &&
+        request.auth.token.keys().hasAny(['phone_number']) &&
+        request.resource.data.uid == userId &&
+        request.resource.data.role == 'customer' &&
+        request.resource.data.phoneVerified == true &&
+        request.resource.data.isActive == true &&
+        request.resource.data.phoneNumber == request.auth.token.phone_number &&
+        request.resource.data.keys().hasOnly([
+          'uid', 'name', 'phoneNumber', 'role', 'phoneVerified', 'isActive',
+          'createdAt', 'updatedAt'
+        ]);
+      allow update: if isAdmin() ||
+        (signedIn() && request.auth.uid == userId &&
+         resource.data.role == 'customer' &&
+         resource.data.phoneVerified == true &&
+         resource.data.isActive == true &&
+         request.resource.data.diff(resource.data).affectedKeys()
+           .hasOnly(['name', 'updatedAt']));
       allow delete: if false;
     }
     match /users/{userId}/devices/{deviceId} {

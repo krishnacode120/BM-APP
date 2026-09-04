@@ -4,13 +4,13 @@ BM uses Firebase Cloud Messaging (FCM) for transactional operational messages. P
 
 ## Device registration
 
-After a signed-in customer explicitly enables order updates, the Flutter app obtains an FCM token and calls `registerDeviceToken`. Tokens are stored at `users/{uid}/devices/{stableDeviceId}` so one account can have several active devices. The callable stores platform, locale, app version, role snapshot, enabled flag and timestamps. Tokens never appear in the customer or normal admin UI.
+After the first successful order submission, Flutter contextually requests notification permission and, when granted, obtains an FCM token and calls `registerDeviceToken`. Tokens are stored at `users/{uid}/devices/{stableDeviceId}` so one account can have several active devices. The callable stores platform, locale, app version, role snapshot, enabled flag and timestamps. Tokens never appear in the customer or normal admin UI.
 
 Token refreshes update the same device document. `deactivateDeviceToken` disables the current device before logout; callers must run it before `FirebaseAuth.signOut()`. A new login cannot overwrite a different user's document because the callable derives the path from `request.auth.uid`.
 
 ## Events and deep links
 
-Customer events are `ORDER_CREATED`, `ORDER_CONFIRMED`, `ORDER_PROCESSING`, `ORDER_READY`, `ORDER_OUT_FOR_DELIVERY`, `ORDER_DELIVERED`, `ORDER_CANCELLED`, and `PAYMENT_VERIFIED`. Admin events are `NEW_ORDER` and a deduplicated `LOW_STOCK` transition.
+Customer events are `ORDER_CREATED`, `ORDER_VERIFIED`, `ORDER_CONFIRMED`, `ORDER_PROCESSING`, `ORDER_READY`, `ORDER_COMPLETED`, `ORDER_CANCELLED`, and `PAYMENT_PAID`. Admin events are `NEW_ORDER` and a deduplicated `LOW_STOCK` transition.
 
 Payload data contains only event type, IDs, order number and an allow-listed route. It never includes address, notes, phone number, device token, or order-item payload. Customer taps open `/orders/{orderId}`; admin taps open `/admin/orders/{orderId}`. Foreground messages use one in-app snackbar rather than a duplicate local notification. English and Tamil customer text is selected from the stored device locale; MVP admin text is English.
 
@@ -18,7 +18,7 @@ Payload data contains only event type, IDs, order number and an allow-listed rou
 
 1. Register the Android app matching `android/app/build.gradle.kts` in the **development** Firebase project.
 2. Put `google-services.json` at `android/app/google-services.json` (ignored by Git).
-3. Build on Android 13+ and grant the `POST_NOTIFICATIONS` permission from BM's Notification settings screen.
+3. Build on Android 13+ and grant `POST_NOTIFICATIONS` after submitting the first test order.
 4. Confirm the native `bm_order_updates` notification channel is visible in device settings.
 
 ## iOS setup

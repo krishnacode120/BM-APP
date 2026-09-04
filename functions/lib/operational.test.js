@@ -23,7 +23,7 @@ const order = {
     locationName: "Karaikudi, Tamil Nadu",
     items: [{ productId: "brick", productName: "Red Brick", quantity: 10, unit: "piece", priceAtOrder: 8, subtotal: 80 }],
     estimatedSubtotal: 80,
-    paymentStatus: "pending",
+    paymentStatus: "unpaid",
     orderStatus: "pending",
 };
 assert((0, operational_1.orderReportRow)(order)[0] === "order-a", "order report uses stable external key");

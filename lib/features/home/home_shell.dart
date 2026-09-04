@@ -7,6 +7,7 @@ import '../../core/widgets/bm_components.dart';
 import '../../l10n/app_localizations.dart';
 import '../../models/category.dart';
 import '../cart/cart_notifier.dart';
+import '../auth/auth_providers.dart';
 import '../catalog/catalog_pages.dart';
 import '../catalog/catalog_providers.dart';
 
@@ -20,6 +21,7 @@ class HomeShell extends ConsumerWidget {
     final popular = ref.watch(popularProductsProvider);
     final location = ref.watch(selectedLocationProvider).valueOrNull;
     final cartCount = ref.watch(cartProvider.select((cart) => cart.itemCount));
+    final customer = ref.watch(currentCustomerProvider).valueOrNull;
     return Scaffold(
       body: SafeArea(
         bottom: false,
@@ -72,20 +74,12 @@ class HomeShell extends ConsumerWidget {
                       ),
                       const Spacer(),
                       IconButton(
-                        tooltip: t.notificationCenter,
-                        onPressed: () => context.push('/notifications'),
-                        icon: const Badge(
-                          smallSize: 7,
-                          child: Icon(Icons.notifications_none_rounded),
-                        ),
-                      ),
-                      IconButton(
-                        tooltip: t.cart,
+                        tooltip: t.orderSummary,
                         onPressed: () => context.push('/cart'),
                         icon: Badge(
                           isLabelVisible: cartCount > 0,
                           label: Text('$cartCount'),
-                          child: const Icon(Icons.shopping_bag_outlined),
+                          child: const Icon(Icons.playlist_add_check_rounded),
                         ),
                       ),
                     ],
@@ -96,6 +90,12 @@ class HomeShell extends ConsumerWidget {
                 padding: const EdgeInsets.fromLTRB(20, 20, 20, 0),
                 sliver: SliverList.list(
                   children: <Widget>[
+                    Text(
+                        customer == null
+                            ? t.goodMorning
+                            : t.goodMorningName(customer.name),
+                        style: Theme.of(context).textTheme.titleMedium),
+                    const SizedBox(height: 4),
                     Text(t.todayQuestion,
                         style: Theme.of(context).textTheme.headlineSmall),
                     const SizedBox(height: 18),
@@ -152,26 +152,17 @@ class HomeShell extends ConsumerWidget {
       bottomNavigationBar: NavigationBar(
         selectedIndex: 0,
         onDestinationSelected: (index) {
-          if (index == 1) context.push('/categories');
+          if (index == 1) context.push('/search');
           if (index == 2) context.push('/orders');
-          if (index == 3) context.push('/cart');
-          if (index == 4) context.push('/profile');
+          if (index == 3) context.push('/profile');
         },
         destinations: <NavigationDestination>[
           NavigationDestination(
               icon: const Icon(Icons.home_rounded), label: t.home),
           NavigationDestination(
-              icon: const Icon(Icons.grid_view_outlined), label: t.categories),
+              icon: const Icon(Icons.search_rounded), label: t.search),
           NavigationDestination(
               icon: const Icon(Icons.receipt_long_outlined), label: t.orders),
-          NavigationDestination(
-            icon: Badge(
-              isLabelVisible: cartCount > 0,
-              label: Text('$cartCount'),
-              child: const Icon(Icons.shopping_bag_outlined),
-            ),
-            label: t.cart,
-          ),
           NavigationDestination(
               icon: const Icon(Icons.person_outline_rounded), label: t.profile),
         ],

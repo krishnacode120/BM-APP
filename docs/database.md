@@ -25,13 +25,24 @@ Milestone 5 adds backend-owned structures: `users/{uid}/devices/{deviceId}` stor
 
 `settings/app` is a separate customer-readable configuration document for `businessName`, `businessPhone`, `whatsappNumber`, `supportEmail`, `defaultCurrency` and `supportHours`. It is admin-write-only and must contain no credentials, admin claims or Microsoft/Firebase secret values.
 
+`users/{uid}` customer documents contain `uid`, `name`, `phoneNumber`, `role: customer`, `phoneVerified`, `isActive`, `createdAt`, and `updatedAt`. Customer creation requires the authenticated Firebase phone to match `phoneNumber`; subsequent customer writes may change only `name` and `updatedAt`. Admin profiles are created only by the trusted bootstrap/admin process.
+
+Order workflow values:
+
+- `orderStatus`: `pending`, `verified`, `confirmed`, `processing`, `ready`, `completed`, `cancelled`.
+- `paymentStatus`: `unpaid`, `partial`, `paid`.
+- `verifiedAt`/`verifiedBy` and `paymentUpdatedAt`/`paymentUpdatedBy` preserve operational attribution.
+- `confirmedSubtotal`, `deliveryCharge`, and `finalTotal` are admin-managed; paid, non-cancelled `finalTotal` (or estimated fallback) is the recognized revenue definition.
+
 Required new indexes: `notificationJobs(status ASC, nextRetryAt ASC)`, `reportSyncJobs(status ASC, nextRetryAt ASC)`, and collection-group `devices(enabled ASC, role ASC)`.
 
 Required indexes:
 
 - `orders(userId ASC, createdAt DESC)`
 - `orders(orderStatus ASC, createdAt DESC)`
+- `orders(paymentStatus ASC, createdAt DESC)`
 - `productPrices(productId ASC, locationId ASC, effectiveFrom DESC)`
+- `productPrices(productId ASC, effectiveTo ASC)`
 - `products(isActive ASC, stockStatus ASC, isPopular ASC)`
 - `products(isActive ASC, stockStatus ASC, categoryId ASC)`
 - `products(isActive ASC, stockStatus ASC, searchTerms ARRAY_CONTAINS)`

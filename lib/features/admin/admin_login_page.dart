@@ -43,7 +43,10 @@ class _AdminLoginPageState extends State<AdminLoginPage> {
       await FirebaseAuth.instance.currentUser?.getIdToken(true);
       if (mounted) context.go('/admin');
     } on FirebaseAuthException catch (exception) {
-      if (mounted) setState(() => error = exception.message ?? exception.code);
+      if (mounted) {
+        setState(() =>
+            error = AppLocalizations.of(context).adminError(exception.code));
+      }
     } finally {
       if (mounted) setState(() => loading = false);
     }

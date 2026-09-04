@@ -35,22 +35,23 @@ Milestone 4 includes callable functions for:
 - `updateInventoryStatus`
 - `setProductPrice`
 - `setAdminRole`
+- `updateBusinessSettings`
 
 Each function requires auth and an admin claim. Order status transitions are validated server-side. Price changes expire existing active prices and create new `productPrices` records, preserving order history.
 
 ## Admin UI
 
-The admin shell includes:
+The admin application includes:
 
-- Dashboard metrics
-- Orders with status/payment operations
-- Products with inventory status controls
-- Categories list
-- Users list
-- Audit log list
-- Settings foundation
+- Firestore dashboard metrics for customers, products, orders, statuses and recognized revenue
+- Searchable customer list, order history, verified/account state and Call Customer
+- Guarded order verification/status/payment/final-total/note operations
+- Product add/edit, inventory/visibility controls, Storage image upload and location pricing
+- Category add/edit/enable/disable
+- Reports, seven-day revenue chart, top materials, CSV fallback and report retry visibility
+- Editable public business contact settings, admin password change and secure logout
 
-The current UI is an operational foundation. Rich add/edit forms, product image picker/upload flow, detailed user profiles and advanced search remain future hardening work.
+Order transitions are `pending -> verified -> confirmed -> processing -> ready -> completed`; cancellation is permitted only from non-terminal operational states. Every important status, payment, price, catalog and settings change is confirmed in the UI and validated/audited by the backend.
 
 ## Emulator Tests
 

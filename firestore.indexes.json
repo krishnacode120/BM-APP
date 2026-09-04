@@ -41,12 +41,28 @@
       ]
     },
     {
+      "collectionGroup": "orders",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "paymentStatus", "order": "ASCENDING" },
+        { "fieldPath": "createdAt", "order": "DESCENDING" }
+      ]
+    },
+    {
       "collectionGroup": "productPrices",
       "queryScope": "COLLECTION",
       "fields": [
         { "fieldPath": "productId", "order": "ASCENDING" },
         { "fieldPath": "locationId", "order": "ASCENDING" },
         { "fieldPath": "effectiveFrom", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "productPrices",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "productId", "order": "ASCENDING" },
+        { "fieldPath": "effectiveTo", "order": "ASCENDING" }
       ]
     },
     {

@@ -8,7 +8,7 @@ Milestone 3 order flow:
 
 Flutter cart UI -> `CartNotifier` -> `CartPricingService` -> checkout -> `OrderRepository.createOrder` -> callable Cloud Function `createOrder` -> Firestore transaction.
 
-The Flutter client may show estimated totals for UX, but it is not authoritative for final order validity or pricing. The Cloud Function derives `request.auth.uid`, reloads product/location/price documents, validates inventory and minimum quantities, creates immutable order item/customer/location snapshots, records an idempotency result, and returns the created order.
+The Flutter client may show estimated totals for UX, but it is not authoritative for identity, final order validity, or pricing. The Cloud Function derives `request.auth.uid`, verifies the Auth phone against an active Firestore customer profile, sources the customer name/phone from that profile, reloads product/location/price documents, validates inventory and minimum quantities, creates immutable order item/customer/location snapshots, records an idempotency result, and returns the created order.
 
 Admin access is never determined by UI routing alone. Firebase custom claims and Firestore security rules will enforce roles, while the app only renders role-appropriate navigation.
 
@@ -24,9 +24,11 @@ Admin UI currently lives in the same Flutter project to share models and reposit
 
 The customer UI continues to follow `Widget -> Riverpod provider/notifier -> repository -> Firebase` for catalog, prices, orders and admin operations. The no-Firebase preview selects `DemoCatalogRepository` at the repository boundary. It never impersonates production writes: phone auth and trusted order submission remain unavailable until development Firebase is configured.
 
-Wishlist, recent searches and saved addresses are device preferences. They are explicitly non-authoritative conveniences and may later move behind authenticated profile repositories. Cart state remains handled by the existing `CartNotifier`; order creation remains server-authoritative.
+Recent searches and the temporary order list are device conveniences. The customer profile is intentionally limited to identity, orders, language, contact and logout. Internal `CartNotifier` naming is retained for architectural compatibility, but the customer experience presents it as an order list and no payment checkout is performed. Order creation remains server-authoritative.
 
-The admin login uses Firebase email/password only, followed by the existing custom-claim gate. A successful Firebase sign-in does not grant admin access without an admin claim.
+Customer statuses are `pending`, `verified`, `confirmed`, `processing`, `ready`, `completed`, and `cancelled`. Payment statuses are admin-managed as `unpaid`, `partial`, and `paid`. The backend transition map prevents arbitrary jumps or rollback from terminal states.
+
+The admin login uses Firebase email/password only, followed by a custom-claim and Firestore-profile gate. A successful Firebase sign-in does not grant admin access without both checks. Admin presentation uses `AdminRepository`; catalog/settings mutations are claim-guarded callables, and image bytes go directly to the restricted `products/{productId}` Storage path.
 
 Milestone 5 operational flow:
 

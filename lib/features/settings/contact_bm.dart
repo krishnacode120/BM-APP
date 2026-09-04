@@ -20,6 +20,27 @@ class ContactBmButton extends ConsumerWidget {
   }
 }
 
+class CallAdminButton extends ConsumerWidget {
+  const CallAdminButton({this.compact = false, super.key});
+  final bool compact;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final t = AppLocalizations.of(context);
+    final settings = ref.watch(businessSettingsProvider).valueOrNull;
+    return FilledButton.icon(
+      onPressed: settings?.canCall == true
+          ? () => launchBmUri(
+                context,
+                Uri(scheme: 'tel', path: settings!.businessPhone),
+              )
+          : null,
+      icon: const Icon(Icons.call_rounded),
+      label: Text(compact ? t.call : t.callAdmin),
+    );
+  }
+}
+
 Future<void> showBmContactSheet(BuildContext context) => showModalBottomSheet(
       context: context,
       showDragHandle: true,
@@ -52,7 +73,7 @@ class _ContactSheet extends ConsumerWidget {
                 leading: const Icon(Icons.call_outlined),
                 title: Text(t.callBm),
                 subtitle: Text(value.businessPhone),
-                onTap: () => _launch(
+                onTap: () => launchBmUri(
                     context, Uri(scheme: 'tel', path: value.businessPhone)),
               ),
             if (value.canWhatsapp)
@@ -60,7 +81,7 @@ class _ContactSheet extends ConsumerWidget {
                 leading: const Icon(Icons.chat_outlined),
                 title: Text(t.whatsappBm),
                 subtitle: Text(value.whatsappNumber),
-                onTap: () => _launch(
+                onTap: () => launchBmUri(
                     context,
                     Uri.parse(
                         'https://wa.me/${value.whatsappNumber.substring(1)}')),
@@ -70,7 +91,7 @@ class _ContactSheet extends ConsumerWidget {
                 leading: const Icon(Icons.email_outlined),
                 title: Text(t.emailBm),
                 subtitle: Text(value.supportEmail),
-                onTap: () => _launch(
+                onTap: () => launchBmUri(
                     context, Uri(scheme: 'mailto', path: value.supportEmail)),
               ),
             if (value.supportHours.isNotEmpty)
@@ -84,12 +105,13 @@ class _ContactSheet extends ConsumerWidget {
       ),
     );
   }
+}
 
-  Future<void> _launch(BuildContext context, Uri uri) async {
-    final launched = await launchUrl(uri, mode: LaunchMode.externalApplication);
-    if (!launched && context.mounted) {
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(
-          content: Text(AppLocalizations.of(context).contactUnavailable)));
-    }
+Future<void> launchBmUri(BuildContext context, Uri uri) async {
+  final launched = await launchUrl(uri, mode: LaunchMode.externalApplication);
+  if (!launched && context.mounted) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(content: Text(AppLocalizations.of(context).contactUnavailable)),
+    );
   }
 }

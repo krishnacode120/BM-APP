@@ -1,25 +1,47 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../l10n/app_localizations.dart';
 import '../../models/order.dart';
+import '../../core/widgets/bm_components.dart';
 import '../cart/cart_notifier.dart';
 import '../catalog/catalog_providers.dart';
+import '../notifications/notification_providers.dart';
+import '../auth/auth_providers.dart';
 import '../settings/contact_bm.dart';
 import 'order_providers.dart';
 
-class CheckoutPage extends ConsumerWidget {
+class CheckoutPage extends ConsumerStatefulWidget {
   const CheckoutPage({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<CheckoutPage> createState() => _CheckoutPageState();
+}
+
+class _CheckoutPageState extends ConsumerState<CheckoutPage> {
+  bool profileApplied = false;
+
+  @override
+  Widget build(BuildContext context) {
     final t = AppLocalizations.of(context);
     final cart = ref.watch(cartProvider);
     final checkout = ref.watch(checkoutProvider);
     final location = ref.watch(selectedLocationProvider).valueOrNull;
+    final customer = ref.watch(currentCustomerProvider).valueOrNull;
+    if (!profileApplied && customer != null) {
+      profileApplied = true;
+      Future<void>.microtask(() {
+        if (!mounted) return;
+        final notifier = ref.read(checkoutProvider.notifier);
+        notifier.updateCustomerName(customer.name);
+        notifier.updatePhoneNumber(customer.phoneNumber);
+      });
+    }
     return Scaffold(
-      appBar: AppBar(title: Text(t.checkout)),
+      appBar: AppBar(title: Text(t.submitOrder)),
       body: ListView(padding: const EdgeInsets.all(16), children: [
         _SectionTitle(t.deliveryLocation),
         ListTile(
@@ -28,16 +50,12 @@ class CheckoutPage extends ConsumerWidget {
           trailing: const Icon(Icons.chevron_right),
           onTap: () => context.push('/locations'),
         ),
-        _SectionTitle(t.customerName),
-        TextField(
-          decoration: InputDecoration(labelText: t.customerName),
-          onChanged: ref.read(checkoutProvider.notifier).updateCustomerName,
-        ),
-        const SizedBox(height: 12),
-        TextField(
-          decoration: InputDecoration(labelText: t.phoneNumber),
-          keyboardType: TextInputType.phone,
-          onChanged: ref.read(checkoutProvider.notifier).updatePhoneNumber,
+        _SectionTitle(t.customerDetails),
+        ListTile(
+          contentPadding: EdgeInsets.zero,
+          leading: const Icon(Icons.person_outline_rounded),
+          title: Text(customer?.name ?? t.customerName),
+          subtitle: Text(customer?.phoneNumber ?? t.signInRequired),
         ),
         const SizedBox(height: 12),
         TextField(
@@ -54,7 +72,7 @@ class CheckoutPage extends ConsumerWidget {
           maxLines: 4,
           onChanged: ref.read(checkoutProvider.notifier).updateCustomerNote,
         ),
-        _SectionTitle(t.orders),
+        _SectionTitle(t.orderSummary),
         for (final item in cart.items)
           ListTile(
             title: Text(item.productName),
@@ -64,9 +82,7 @@ class CheckoutPage extends ConsumerWidget {
         const Divider(),
         _CheckoutRow(label: t.estimatedTotal, value: '₹${cart.subtotal}'),
         const SizedBox(height: 8),
-        Text(t.paymentNotice),
-        const SizedBox(height: 8),
-        const ContactBmButton(compact: true),
+        Text(t.finalPriceNotice),
         if (checkout.errorCode != null)
           Padding(
             padding: const EdgeInsets.only(top: 12),
@@ -82,9 +98,28 @@ class CheckoutPage extends ConsumerWidget {
                   !cart.canCheckout
               ? null
               : () async {
+                  final confirmed = await showDialog<bool>(
+                    context: context,
+                    builder: (dialogContext) => AlertDialog(
+                      title: Text(t.confirmOrder),
+                      content: Text(t.confirmOrderMessage),
+                      actions: <Widget>[
+                        TextButton(
+                          onPressed: () => Navigator.pop(dialogContext, false),
+                          child: Text(t.cancel),
+                        ),
+                        FilledButton(
+                          onPressed: () => Navigator.pop(dialogContext, true),
+                          child: Text(t.submitOrder),
+                        ),
+                      ],
+                    ),
+                  );
+                  if (confirmed != true) return;
                   final order =
                       await ref.read(checkoutProvider.notifier).submit(cart);
                   if (order != null && context.mounted) {
+                    unawaited(_registerOrderNotifications());
                     context.go('/order-success', extra: order);
                   }
                 },
@@ -95,10 +130,20 @@ class CheckoutPage extends ConsumerWidget {
                   child: CircularProgressIndicator(strokeWidth: 2),
                 )
               : const Icon(Icons.lock_outline),
-          label: Text(checkout.isSubmitting ? t.placingOrder : t.placeOrder),
+          label: Text(checkout.isSubmitting ? t.placingOrder : t.submitOrder),
         ),
       ),
     );
+  }
+
+  Future<void> _registerOrderNotifications() async {
+    try {
+      await ref
+          .read(notificationServiceProvider)
+          .requestPermissionAndRegister();
+    } catch (_) {
+      // Order success never depends on notification transport availability.
+    }
   }
 }
 
@@ -118,7 +163,10 @@ class OrderHistoryPage extends ConsumerWidget {
             : ListView.builder(
                 padding: const EdgeInsets.all(16),
                 itemCount: items.length,
-                itemBuilder: (_, index) => _OrderCard(order: items[index]),
+                itemBuilder: (_, index) => BmEntrance(
+                  delay: Duration(milliseconds: (index * 35).clamp(0, 280)),
+                  child: _OrderCard(order: items[index]),
+                ),
               ),
       ),
     );
@@ -145,36 +193,68 @@ class OrderDetailPage extends ConsumerWidget {
   }
 }
 
-class OrderSuccessPage extends StatelessWidget {
+class OrderSuccessPage extends StatefulWidget {
   const OrderSuccessPage({required this.order, super.key});
   final BmOrder order;
+
+  @override
+  State<OrderSuccessPage> createState() => _OrderSuccessPageState();
+}
+
+class _OrderSuccessPageState extends State<OrderSuccessPage> {
+  bool visible = false;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) setState(() => visible = true);
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     final t = AppLocalizations.of(context);
+    final order = widget.order;
     return Scaffold(
       body: SafeArea(
         child: Padding(
           padding: const EdgeInsets.all(24),
-          child: Column(mainAxisAlignment: MainAxisAlignment.center, children: [
-            const Icon(Icons.check_circle_outline, size: 72),
-            const SizedBox(height: 16),
-            Text(t.orderSubmitted,
-                style: Theme.of(context).textTheme.headlineSmall),
-            const SizedBox(height: 12),
-            Text(order.orderNumber,
-                style: Theme.of(context).textTheme.titleLarge),
-            const SizedBox(height: 8),
-            Text('${t.estimatedTotal}: ₹${order.estimatedSubtotal}'),
-            const SizedBox(height: 16),
-            Text(t.finalPriceNotice, textAlign: TextAlign.center),
-            const SizedBox(height: 24),
-            FilledButton(
-                onPressed: () => context.go('/orders/${order.id}'),
-                child: Text(t.viewOrder)),
-            TextButton(
-                onPressed: () => context.go('/home'),
-                child: Text(t.continueShopping)),
-          ]),
+          child: AnimatedOpacity(
+            opacity: visible ? 1 : 0,
+            duration: const Duration(milliseconds: 420),
+            child:
+                Column(mainAxisAlignment: MainAxisAlignment.center, children: [
+              TweenAnimationBuilder<double>(
+                tween: Tween<double>(begin: .5, end: visible ? 1 : .5),
+                duration: const Duration(milliseconds: 520),
+                curve: Curves.elasticOut,
+                builder: (_, scale, child) =>
+                    Transform.scale(scale: scale, child: child),
+                child: const Icon(Icons.check_circle_rounded,
+                    size: 82, color: Color(0xFF2D8A52)),
+              ),
+              const SizedBox(height: 16),
+              Text(t.orderSubmitted,
+                  style: Theme.of(context).textTheme.headlineSmall),
+              const SizedBox(height: 12),
+              Text(order.orderNumber,
+                  style: Theme.of(context).textTheme.titleLarge),
+              const SizedBox(height: 8),
+              Text('${t.estimatedTotal}: ₹${order.estimatedSubtotal}'),
+              const SizedBox(height: 16),
+              Text(t.orderSuccessMessage, textAlign: TextAlign.center),
+              const SizedBox(height: 24),
+              const CallAdminButton(),
+              const SizedBox(height: 10),
+              FilledButton(
+                  onPressed: () => context.go('/orders/${order.id}'),
+                  child: Text(t.viewOrder)),
+              TextButton(
+                  onPressed: () => context.go('/home'),
+                  child: Text(t.continueShopping)),
+            ]),
+          ),
         ),
       ),
     );
@@ -202,23 +282,22 @@ class OrderDetailBody extends StatelessWidget {
         ),
       const Divider(),
       _CheckoutRow(
-          label: t.estimatedTotal, value: '₹${order.estimatedSubtotal}'),
+          label: order.finalTotal == null ? t.estimatedTotal : t.finalTotal,
+          value: '₹${order.displayTotal}'),
       const SizedBox(height: 16),
+      Text('${t.customerName}: ${order.customerName}'),
       Text('${t.deliveryLocation}: ${order.locationName}'),
       if (order.deliveryAddress.isNotEmpty)
         Text('${t.address}: ${order.deliveryAddress}'),
       Text('${t.phoneNumber}: ${order.phoneNumber}'),
-      Text('${t.paymentPending}: ${t.paymentStatus(order.paymentStatus.name)}'),
+      Text('${t.orderDate}: ${_date(order.createdAt)}'),
+      Text('${t.payment}: ${t.paymentStatus(order.paymentStatus.name)}'),
       if (order.customerNote?.isNotEmpty == true)
         Text('${t.orderNote}: ${order.customerNote}'),
       const SizedBox(height: 16),
-      OutlinedButton.icon(
-        onPressed: () => context.push('/orders/${order.id}/tracking'),
-        icon: const Icon(Icons.local_shipping_outlined),
-        label: Text(t.orderTracking),
-      ),
+      const CallAdminButton(),
       const SizedBox(height: 10),
-      const ContactBmButton(),
+      const ContactBmButton(compact: true),
     ]);
   }
 }
@@ -233,15 +312,12 @@ class _OrderCard extends StatelessWidget {
       child: ListTile(
         leading: const Icon(Icons.receipt_long_outlined),
         title: Text(order.orderNumber),
-        subtitle: Text('${order.items.length} ${t.orders}'),
-        trailing: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          crossAxisAlignment: CrossAxisAlignment.end,
-          children: [
-            Text('₹${order.estimatedSubtotal}'),
-            Text(t.orderStatus(order.orderStatus.name)),
-          ],
+        subtitle: Text(
+          '${_date(order.createdAt)} · ${order.items.length} ${t.orders}\n'
+          '${t.orderStatus(order.orderStatus.name)} · ${t.paymentStatus(order.paymentStatus.name)}',
         ),
+        isThreeLine: true,
+        trailing: Text('₹${order.displayTotal}'),
         onTap: () => context.push('/orders/${order.id}'),
       ),
     );
@@ -254,11 +330,27 @@ class _Timeline extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final t = AppLocalizations.of(context);
-    final steps = <OrderStatus>[OrderStatus.pending, status];
+    if (status == OrderStatus.cancelled) {
+      return ListTile(
+        contentPadding: EdgeInsets.zero,
+        leading: const Icon(Icons.cancel_outlined),
+        title: Text(t.orderStatus(status.name)),
+      );
+    }
+    const flow = <OrderStatus>[
+      OrderStatus.pending,
+      OrderStatus.verified,
+      OrderStatus.confirmed,
+      OrderStatus.processing,
+      OrderStatus.ready,
+      OrderStatus.completed,
+    ];
+    final currentIndex = flow.indexOf(status);
+    final steps = flow.take(currentIndex + 1);
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        for (final step in steps.toSet())
+        for (final step in steps)
           ListTile(
             leading: const Icon(Icons.radio_button_checked),
             title: Text(t.orderStatus(step.name)),
@@ -267,6 +359,9 @@ class _Timeline extends StatelessWidget {
     );
   }
 }
+
+String _date(DateTime value) =>
+    '${value.day.toString().padLeft(2, '0')}/${value.month.toString().padLeft(2, '0')}/${value.year}';
 
 class _SectionTitle extends StatelessWidget {
   const _SectionTitle(this.text);

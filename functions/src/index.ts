@@ -52,21 +52,14 @@ type CreateOrderRequest = {
 const orderableStatuses = new Set(["available", "lowStock"]);
 const orderStatuses = new Set([
   "pending",
+  "verified",
   "confirmed",
   "processing",
   "ready",
-  "outForDelivery",
-  "delivered",
+  "completed",
   "cancelled",
 ]);
-const paymentStatuses = new Set([
-  "pending",
-  "verificationRequired",
-  "verified",
-  "failed",
-  "refunded",
-  "notRequired",
-]);
+const paymentStatuses = new Set(["unpaid", "partial", "paid"]);
 const inventoryStatuses = new Set([
   "available",
   "lowStock",
@@ -75,12 +68,12 @@ const inventoryStatuses = new Set([
   "hidden",
 ]);
 const allowedOrderTransitions = new Map<string, string[]>([
-  ["pending", ["confirmed", "cancelled"]],
+  ["pending", ["verified", "cancelled"]],
+  ["verified", ["confirmed", "cancelled"]],
   ["confirmed", ["processing", "cancelled"]],
-  ["processing", ["ready"]],
-  ["ready", ["outForDelivery"]],
-  ["outForDelivery", ["delivered"]],
-  ["delivered", []],
+  ["processing", ["ready", "cancelled"]],
+  ["ready", ["completed", "cancelled"]],
+  ["completed", []],
   ["cancelled", []],
 ]);
 
@@ -100,6 +93,18 @@ export const createOrder = onCall(async (request) => {
       const existingOrder = await tx.get(db.collection("orders").doc(orderId));
       if (!existingOrder.exists) throw new HttpsError("not-found", "Order not found.");
       return {order: withId(existingOrder.id, existingOrder.data()!)};
+    }
+
+    const customerDoc = await tx.get(db.collection("users").doc(uid));
+    if (!customerDoc.exists || customerDoc.get("role") !== "customer" ||
+        customerDoc.get("phoneVerified") !== true || customerDoc.get("isActive") === false) {
+      throw new HttpsError("failed-precondition", "Verified customer profile required.");
+    }
+    const customer = customerDoc.data()!;
+    const verifiedPhone = String(customer.phoneNumber ?? "");
+    const authPhone = String(request.auth?.token.phone_number ?? "");
+    if (!verifiedPhone || verifiedPhone !== authPhone || verifiedPhone !== payload.phoneNumber) {
+      throw new HttpsError("permission-denied", "Verified phone does not match order.");
     }
 
     const locationDoc = await tx.get(db.collection("locations").doc(payload.locationId));
@@ -152,8 +157,8 @@ export const createOrder = onCall(async (request) => {
     const order = {
       orderNumber: `BM${nextNumber}`,
       userId: uid,
-      customerName: payload.customerName,
-      phoneNumber: payload.phoneNumber,
+      customerName: String(customer.name ?? "").trim(),
+      phoneNumber: verifiedPhone,
       deliveryAddress: payload.deliveryAddress ?? "",
       locationId: payload.locationId,
       locationName: `${location.city ?? ""}, ${location.state ?? ""}`.trim(),
@@ -167,7 +172,7 @@ export const createOrder = onCall(async (request) => {
       items: itemSnapshots,
       estimatedSubtotal,
       orderStatus: "pending",
-      paymentStatus: "pending",
+      paymentStatus: "unpaid",
       customerNote: payload.customerNote ?? null,
       adminNote: null,
       createdAt: now,
@@ -226,15 +231,17 @@ export const updatePaymentStatus = onCall(async (request) => {
     updates: {
       paymentStatus,
       updatedAt: admin.firestore.FieldValue.serverTimestamp(),
-      ...(paymentStatus === "verified" ? {
-        paymentVerifiedAt: admin.firestore.FieldValue.serverTimestamp(),
-        paymentVerifiedBy: adminUid,
+      paymentUpdatedAt: admin.firestore.FieldValue.serverTimestamp(),
+      paymentUpdatedBy: adminUid,
+      ...(paymentStatus === "paid" ? {
+        paidAt: admin.firestore.FieldValue.serverTimestamp(),
+        paidBy: adminUid,
       } : {}),
     },
     oldValue: {paymentStatus: current.paymentStatus ?? null},
     newValue: {paymentStatus},
   }), {
-    notification: paymentStatus === "verified" ? "PAYMENT_VERIFIED" : null,
+    notification: paymentStatus === "paid" ? "PAYMENT_PAID" : null,
     report: "PAYMENT_STATUS_CHANGED",
   });
 });
@@ -396,6 +403,43 @@ export const setProductPrice = onCall(async (request) => {
   return {productId, locationId, price};
 });
 
+export const updateBusinessSettings = onCall(async (request) => {
+  const adminUid = requireAdmin(request.auth);
+  const data = request.data as Record<string, unknown>;
+  const businessName = String(data.businessName ?? "").trim();
+  const businessPhone = String(data.businessPhone ?? "").trim();
+  const whatsappNumber = String(data.whatsappNumber ?? "").trim();
+  const supportEmail = String(data.supportEmail ?? "").trim().toLowerCase();
+  const defaultCurrency = String(data.defaultCurrency ?? "INR").trim().toUpperCase();
+  const supportHours = String(data.supportHours ?? "").trim();
+  if (businessName.length < 2 || businessName.length > 100 ||
+      !/^\+[1-9]\d{7,14}$/.test(businessPhone) ||
+      !/^\+[1-9]\d{7,14}$/.test(whatsappNumber) ||
+      !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(supportEmail) ||
+      !/^[A-Z]{3}$/.test(defaultCurrency) || supportHours.length > 160) {
+    throw new HttpsError("invalid-argument", "Invalid business settings.");
+  }
+  const ref = db.collection("settings").doc("app");
+  const before = await ref.get();
+  const settings = {
+    businessName,
+    businessPhone,
+    whatsappNumber,
+    supportEmail,
+    defaultCurrency,
+    supportHours,
+    updatedAt: admin.firestore.FieldValue.serverTimestamp(),
+    updatedBy: adminUid,
+  };
+  const batch = db.batch();
+  batch.set(ref, settings, {merge: true});
+  batch.create(db.collection("auditLogs").doc(), auditData(adminUid,
+    "BUSINESS_SETTINGS_UPDATED", "settings", "app", before.data() ?? null,
+    {...settings, updatedAt: null}));
+  await batch.commit();
+  return {id: "app"};
+});
+
 export const setAdminRole = onCall(async (request) => {
   const adminUid = requireAdmin(request.auth);
   const data = request.data as Record<string, unknown>;
@@ -492,18 +536,38 @@ export const retryReportSync = onCall(async (request) => {
 export const exportOrdersCsv = onCall(async (request) => {
   requireAdmin(request.auth);
   const data = request.data as Record<string, unknown>;
+  const reportType = String(data?.reportType ?? "orders").trim();
+  if (!["orders", "revenue", "products", "customers"].includes(reportType)) {
+    throw new HttpsError("invalid-argument", "Invalid report type.");
+  }
   const status = data?.orderStatus == null ? null : String(data.orderStatus).trim();
   if (status != null && !orderStatuses.has(status)) {
     throw new HttpsError("invalid-argument", "Invalid order status.");
   }
-  let query: admin.firestore.Query = db.collection("orders").orderBy("createdAt", "desc").limit(500);
-  if (status) query = db.collection("orders").where("orderStatus", "==", status)
+  if (reportType === "products") {
+    const snapshot = await db.collection("products").limit(500).get();
+    return {
+      filename: `bm-products-${new Date().toISOString().slice(0, 10)}.csv`,
+      csv: productsCsv(snapshot.docs.map((doc) => ({id: doc.id, ...doc.data()}))),
+    };
+  }
+  if (reportType === "customers") {
+    const snapshot = await db.collection("users").where("role", "==", "customer").limit(500).get();
+    return {
+      filename: `bm-customers-${new Date().toISOString().slice(0, 10)}.csv`,
+      csv: customersCsv(snapshot.docs.map((doc) => ({id: doc.id, ...doc.data()}))),
+    };
+  }
+  let query: admin.firestore.Query = reportType === "revenue"
+    ? db.collection("orders").where("paymentStatus", "==", "paid").orderBy("createdAt", "desc").limit(500)
+    : db.collection("orders").orderBy("createdAt", "desc").limit(500);
+  if (status && reportType === "orders") query = db.collection("orders").where("orderStatus", "==", status)
     .orderBy("createdAt", "desc").limit(500);
   const snapshot = await query.get();
   const rows = snapshot.docs.map((doc) => ({id: doc.id, ...doc.data()}));
   return {
-    filename: `bm-orders-${new Date().toISOString().slice(0, 10)}.csv`,
-    csv: ordersCsv(rows),
+    filename: `bm-${reportType}-${new Date().toISOString().slice(0, 10)}.csv`,
+    csv: reportType === "revenue" ? revenueCsv(rows) : ordersCsv(rows),
   };
 });
 
@@ -549,6 +613,36 @@ function ordersCsv(rows: Array<admin.firestore.DocumentData & {id: string}>): st
     order.id, order.orderNumber, csvDate(order.createdAt), order.customerName, order.phoneNumber,
     order.locationName, Array.isArray(order.items) ? order.items.map((item: {productName?: string; quantity?: number}) => `${item.productName ?? ""} x${item.quantity ?? 0}`).join("; ") : "",
     order.estimatedSubtotal, order.finalTotal ?? "", order.paymentStatus, order.orderStatus, csvDate(order.updatedAt),
+  ]);
+  return [headers, ...values].map((row) => row.map(csvCell).join(",")).join("\n");
+}
+
+function revenueCsv(rows: Array<admin.firestore.DocumentData & {id: string}>): string {
+  const headers = ["Order ID", "Order Number", "Created At", "Customer Name", "Final Amount", "Payment Status", "Order Status"];
+  const values = rows
+    .filter((order) => order.orderStatus !== "cancelled")
+    .map((order) => [
+      order.id, order.orderNumber, csvDate(order.createdAt), order.customerName,
+      order.finalTotal ?? order.estimatedSubtotal ?? 0, order.paymentStatus, order.orderStatus,
+    ]);
+  return [headers, ...values].map((row) => row.map(csvCell).join(",")).join("\n");
+}
+
+function productsCsv(rows: Array<admin.firestore.DocumentData & {id: string}>): string {
+  const headers = ["Product ID", "Name", "Tamil Name", "Category ID", "Brand", "Unit", "Minimum Order", "Inventory Status", "Stock Quantity", "Active"];
+  const values = rows.map((product) => [
+    product.id, product.name, product.nameTamil, product.categoryId, product.brand,
+    product.unit, product.minimumOrderQuantity, product.stockStatus,
+    product.stockQuantity ?? "", product.isActive,
+  ]);
+  return [headers, ...values].map((row) => row.map(csvCell).join(",")).join("\n");
+}
+
+function customersCsv(rows: Array<admin.firestore.DocumentData & {id: string}>): string {
+  const headers = ["Customer UID", "Name", "Phone", "Phone Verified", "Account Active", "Created At"];
+  const values = rows.map((customer) => [
+    customer.id, customer.name, customer.phoneNumber, customer.phoneVerified,
+    customer.isActive, csvDate(customer.createdAt),
   ]);
   return [headers, ...values].map((row) => row.map(csvCell).join(",")).join("\n");
 }
@@ -686,29 +780,46 @@ function parseProduct(data: Record<string, unknown>) {
   const unit = String(data.unit ?? "").trim();
   const stockStatus = String(data.stockStatus ?? "available").trim();
   const minimumOrderQuantity = Number(data.minimumOrderQuantity ?? 1);
+  const nameTamil = String(data.nameTamil ?? "").trim();
+  const brand = String(data.brand ?? "").trim();
+  const keywords = readStringArray(data.keywords);
   if (!name || !categoryId || !unit || !inventoryStatuses.has(stockStatus) ||
       !Number.isInteger(minimumOrderQuantity) || minimumOrderQuantity < 1) {
     throw new HttpsError("invalid-argument", "Invalid product.");
   }
   return {
     name,
-    nameTamil: String(data.nameTamil ?? "").trim(),
+    nameTamil,
     categoryId,
     description: String(data.description ?? "").trim(),
     descriptionTamil: String(data.descriptionTamil ?? "").trim(),
-    brand: String(data.brand ?? "").trim(),
+    brand,
     unit,
     minimumOrderQuantity,
     stockStatus,
     stockQuantity: readOptionalInteger(data.stockQuantity),
     specifications: readObject(data.specifications),
-    keywords: readStringArray(data.keywords),
+    keywords,
+    searchTerms: buildSearchTerms([name, nameTamil, brand, ...keywords]),
     images: readStringArray(data.images),
     thumbnail: String(data.thumbnail ?? "").trim() || null,
     isPopular: data.isPopular === true,
     isFeatured: data.isFeatured === true,
     isActive: data.isActive !== false,
   };
+}
+
+function buildSearchTerms(values: string[]): string[] {
+  const terms = new Set<string>();
+  for (const raw of values) {
+    const value = raw.trim().toLocaleLowerCase();
+    if (!value) continue;
+    terms.add(value);
+    for (const word of value.split(/\s+/)) {
+      if (word) terms.add(word);
+    }
+  }
+  return [...terms].slice(0, 100);
 }
 
 function parseCategory(data: Record<string, unknown>) {
@@ -799,4 +910,11 @@ async function writeAudit(
     auditData(actorUserId, action, entityType, entityId, oldValue, newValue));
 }
 
-export const testHooks = {canTransition};
+export const testHooks = {
+  canTransition,
+  buildSearchTerms,
+  ordersCsv,
+  revenueCsv,
+  productsCsv,
+  customersCsv,
+};

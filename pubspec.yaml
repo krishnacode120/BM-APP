@@ -22,6 +22,8 @@ dependencies:
   shared_preferences: ^2.3.3
   url_launcher: ^6.3.2
   flutter_svg: ^2.3.0
+  firebase_storage: ^12.4.10
+  image_picker: ^1.2.3
 
 dev_dependencies:
   flutter_test:

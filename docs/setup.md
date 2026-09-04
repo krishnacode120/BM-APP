@@ -25,7 +25,7 @@ This requires Admin SDK credentials or a trusted Firebase environment. Never com
 
 ## Milestone 5 operational setup
 
-Configure only a development Firebase project first. Add Android `google-services.json` and iOS `GoogleService-Info.plist` (both ignored), enable Cloud Messaging, deploy rules/indexes/functions, then follow [notifications.md](notifications.md) for Android/iOS/APNs validation. Do not request notification permission on splash; BM asks from its notification settings screen with an order-update rationale.
+Configure only a development Firebase project first. Add Android `google-services.json` and iOS `GoogleService-Info.plist` (both ignored), enable Cloud Messaging, deploy rules/indexes/functions, then follow [notifications.md](notifications.md) for Android/iOS/APNs validation. Do not request notification permission on splash; BM requests it contextually after the customer's first successful order, with an order-update rationale.
 
 For Microsoft reporting, create the development workbook/tables before deploying workers and set the seven Graph values with `firebase functions:secrets:set`. Follow the least-privilege app registration and recovery procedure in [reporting.md](reporting.md). Missing credentials deliberately create a private failed sync state rather than a fake Excel success.
 
@@ -52,4 +52,4 @@ node scripts/seed-development-data.js
 
 ### Local Android prerequisite
 
-Before a development APK can be built on this workstation, install Android SDK 36 and Android BuildTools 28.0.3 from Android Studio's SDK Manager, then run `flutter doctor --android-licenses`. Confirm `flutter doctor -v` has no Android-toolchain error before starting an emulator or running `flutter build apk --debug`.
+This workstation has Android SDK 36 and Build Tools 36 installed and its Android licenses accepted. On a new workstation, install the SDK/platform/build tools required by the current Flutter/Gradle configuration from Android Studio's SDK Manager, run `flutter doctor --android-licenses`, and confirm `flutter doctor -v` has no Android-toolchain error before starting an emulator or running `flutter build apk --debug`.

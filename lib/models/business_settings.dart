@@ -23,6 +23,15 @@ class BusinessSettings {
   bool get canWhatsapp => RegExp(r'^\+[1-9]\d{7,14}$').hasMatch(whatsappNumber);
   bool get hasSupportEmail => supportEmail.contains('@');
 
+  Map<String, Object?> toJson() => <String, Object?>{
+        'businessName': businessName.trim(),
+        'businessPhone': businessPhone.trim(),
+        'whatsappNumber': whatsappNumber.trim(),
+        'supportEmail': supportEmail.trim(),
+        'defaultCurrency': defaultCurrency.trim(),
+        'supportHours': supportHours.trim(),
+      };
+
   factory BusinessSettings.fromFirestore(
           DocumentSnapshot<Map<String, dynamic>> document) =>
       BusinessSettings(

@@ -248,3 +248,42 @@ class BmStatusChip extends StatelessWidget {
 }
 
 enum BmStatusTone { success, warning, error, info, neutral }
+
+class BmEntrance extends StatefulWidget {
+  const BmEntrance({
+    required this.child,
+    this.delay = Duration.zero,
+    super.key,
+  });
+
+  final Widget child;
+  final Duration delay;
+
+  @override
+  State<BmEntrance> createState() => _BmEntranceState();
+}
+
+class _BmEntranceState extends State<BmEntrance> {
+  bool visible = false;
+
+  @override
+  void initState() {
+    super.initState();
+    Future<void>.delayed(widget.delay, () {
+      if (mounted) setState(() => visible = true);
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) => AnimatedOpacity(
+        opacity: visible ? 1 : 0,
+        duration: const Duration(milliseconds: 320),
+        curve: Curves.easeOut,
+        child: AnimatedSlide(
+          offset: visible ? Offset.zero : const Offset(0, .045),
+          duration: const Duration(milliseconds: 360),
+          curve: Curves.easeOutCubic,
+          child: widget.child,
+        ),
+      );
+}
