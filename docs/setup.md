@@ -47,7 +47,7 @@ $env:BM_SEED_ENV='development'
 node scripts/seed-development-data.js
 ```
 
-9. Replace the `settings/app` contact placeholders with approved business phone, WhatsApp, email and support hours through an authorized admin process. This document is publicly readable; never place secrets in it.
+9. The development seed uses the approved BM phone `+917708538700`. Complete the WhatsApp, email and support-hours values through an authorized admin process. This document is publicly readable; never place secrets in it.
 10. Configure FCM/APNs and Graph secrets using [notifications.md](notifications.md) and [reporting.md](reporting.md), then follow [real-device-test-checklist.md](real-device-test-checklist.md).
 
 ### Local Android prerequisite

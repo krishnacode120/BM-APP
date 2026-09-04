@@ -31,7 +31,7 @@ The responsive admin application requires an email/password Firebase session, an
 | FCM | Transactional code, templates, token lifecycle and tests exist; live device delivery is not verified |
 | APNs | Requires macOS/Xcode, Apple credentials, APNs key and a physical iPhone |
 | Microsoft Graph/Excel | Durable worker/retry/dead-letter code and unit tests exist; live workbook/secrets are not configured |
-| Contact settings | Development seed intentionally uses placeholders; approved BM values are required |
+| Contact settings | Approved BM phone is present in the development seed; WhatsApp, email and support hours still need approved values |
 
 The Firebase CLI is available locally through `npx firebase-tools`, but the machine is not authenticated. No deployment, admin bootstrap, real OTP, live push, or live Excel claim is made.
 

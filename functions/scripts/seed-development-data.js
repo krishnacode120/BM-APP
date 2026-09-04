@@ -81,7 +81,7 @@ async function seed() {
   }
   batch.set(db.collection("settings").doc("app"), {
     businessName: "BM",
-    businessPhone: "+91XXXXXXXXXX",
+    businessPhone: "+917708538700",
     whatsappNumber: "+91XXXXXXXXXX",
     supportEmail: "",
     defaultCurrency: "INR",
@@ -90,7 +90,7 @@ async function seed() {
     developmentOnly: true,
   }, {merge: true});
   await batch.commit();
-  console.log("Seeded BM development catalog. Replace contact placeholders before client testing.");
+  console.log("Seeded BM development catalog. Complete the remaining contact settings before client testing.");
 }
 
 seed().catch((error) => {
