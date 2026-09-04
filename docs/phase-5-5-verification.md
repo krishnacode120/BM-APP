@@ -30,8 +30,8 @@ The responsive admin application requires an email/password Firebase session, an
 | Authentication | Email/password and Phone providers are enabled; the Android debug SHA-1/SHA-256 fingerprints are registered |
 | Firestore | The default database was created in immutable multi-region `nam5`; restrictive rules and indexes are deployed; 48 clearly identified development documents are seeded |
 | Catalog | Live customer-shaped queries return 8 active categories, 4 active locations and 7 visible products through the deployed rules/indexes |
-| Storage | The API is enabled, but the bucket cannot be provisioned on the current Spark plan; product upload remains blocked pending an explicitly approved Blaze upgrade |
-| Functions | Backend code builds and tests locally, but live callable order/admin/notification/reporting deployment remains blocked pending an explicitly approved Blaze upgrade |
+| Storage | The project deliberately remains on Spark, so a bucket is not provisioned and live product-image upload is unavailable |
+| Functions | Backend code builds and tests locally, but callable order/admin/notification/reporting operations are deliberately not deployed while the project remains on Spark |
 | Admin bootstrap | Pending an approved real admin email, Firebase Auth account, custom admin claim and active Firestore admin profile; `raj123` may be a display name but is not a Firebase email login |
 | FCM | Transactional code, templates, token lifecycle and tests exist; live device delivery is not verified |
 | APNs | Requires macOS/Xcode, Apple credentials, APNs key and a physical iPhone |
@@ -50,4 +50,4 @@ When Firebase is absent, `DemoCatalogRepository` supplies clearly development-on
 
 ## Remaining release blockers
 
-Decide whether to upgrade the development project to Blaze before provisioning Storage and deploying Functions. Then bootstrap an approved admin email account, verify customer OTP and admin flows on a physical device, complete remaining contact values, configure APNs/FCM and Graph secrets/workbook, and finish the route-by-route device checklist. Production identifiers, launcher/store assets, signing, legal content, and production project separation also require client approval.
+The client chose to retain the Spark plan. Storage uploads and Cloud Functions-backed order/admin/notification/reporting operations are therefore documented limitations rather than pending deployment work. Bootstrap an approved admin email account, verify the Spark-compatible authentication/catalog paths on a physical device, complete remaining contact values, and finish the applicable route-by-route device checklist. Production identifiers, launcher/store assets, signing, and legal content also require client approval.

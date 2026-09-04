@@ -29,6 +29,6 @@
 - [x] Deploy restrictive Firestore rules/indexes and seed 48 development catalog/settings documents
 - [ ] Validate all screens on physical small Android, typical Android and iPhone devices
 - [ ] Replace temporary platform launcher icons after final brand approval
-- [ ] Provision Storage and deploy Functions after an explicitly approved Blaze upgrade
+- [x] Keep `bm-app-74ddb` on Spark; live Storage/Functions capabilities are intentionally excluded by the client decision
 - [ ] Bootstrap a Firebase admin account using an approved real email (a username alone is not a Firebase email/password identity)
 - [ ] Verify Firebase-authenticated customer/admin paths against `bm-app-74ddb` on a physical device

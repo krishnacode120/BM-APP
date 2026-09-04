@@ -25,7 +25,7 @@ This requires Admin SDK credentials or a trusted Firebase environment. Never com
 
 ## Milestone 5 operational setup
 
-Configure only a development Firebase project first. The local Android `google-services.json`, iOS `GoogleService-Info.plist` (both ignored), and committed public `lib/firebase_options.dart` currently target `bm-app-74ddb`. Firestore rules/indexes are deployed and development seed data is installed. Storage provisioning and Functions deployment require an explicitly approved Blaze upgrade. Follow [notifications.md](notifications.md) for Android/iOS/APNs validation. Do not request notification permission on splash; BM requests it contextually after the customer's first successful order, with an order-update rationale.
+Configure only a development Firebase project first. The local Android `google-services.json`, iOS `GoogleService-Info.plist` (both ignored), and committed public `lib/firebase_options.dart` currently target `bm-app-74ddb`. Firestore rules/indexes are deployed and development seed data is installed. The client chose to retain the Spark plan, so do not provision Storage or deploy Functions; use the emulator suite to validate those code paths. Follow [notifications.md](notifications.md) for platform prerequisites if that scope is revisited.
 
 For Microsoft reporting, create the development workbook/tables before deploying workers and set the seven Graph values with `firebase functions:secrets:set`. Follow the least-privilege app registration and recovery procedure in [reporting.md](reporting.md). Missing credentials deliberately create a private failed sync state rather than a fake Excel success.
 
@@ -36,7 +36,7 @@ For Microsoft reporting, create the development workbook/tables before deploying
 3. `lib/firebase_options.dart` contains Firebase public configuration and is committed so Android/iOS startup is compile-safe.
 4. Email/password and Phone Authentication are enabled, and Android debug SHA-1/SHA-256 fingerprints are registered. Review authorized domains and complete iOS/APNs configuration before external testing.
 5. Firestore rules/indexes are deployed and 48 development category/product/location/price/settings documents have been seeded. Never rerun a development seed against production.
-6. After explicitly approving a Blaze upgrade, provision Storage and deploy only the development Functions/Storage rules: `firebase deploy --only storage,functions`.
+6. Do not provision Storage or deploy Functions while the Spark-plan decision remains. Continue validating those code paths with the local emulator suite.
 7. Create an admin with the trusted bootstrap script documented in [admin-guide.md](admin-guide.md).
 8. Seed only development data from a trusted shell:
 

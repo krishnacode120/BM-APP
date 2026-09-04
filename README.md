@@ -39,6 +39,8 @@ Milestone 5 adds a durable operational outbox: FCM device-token registration, to
 6. Install backend dependencies with `npm install` in `functions/`, then run `npm run build`.
 7. Run `flutter run --dart-define=BM_ENV=development`.
 
+`bm-app-74ddb` intentionally remains on the Spark plan. Firestore catalog and authentication are configured live; Storage uploads and Cloud Functions-backed order/admin/notification/reporting operations must be tested with the local emulator and are unavailable in the live development project.
+
 ## Checks
 
 ```powershell
