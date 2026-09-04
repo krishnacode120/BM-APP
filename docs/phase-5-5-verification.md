@@ -25,7 +25,7 @@ The responsive admin application requires an email/password Firebase session, an
 | --- | --- |
 | Android Firebase | `com.example.bm` is registered in `bm-app-74ddb`; the generated local `google-services.json` is installed and ignored by Git |
 | iOS Firebase | `com.example.bm` is registered in `bm-app-74ddb`; the generated local `GoogleService-Info.plist` is installed and ignored by Git |
-| FlutterFire options | Generated for Android/iOS in `lib/firebase_options.dart` and wired into app startup |
+| FlutterFire options | Android/iOS app identifiers are wired into startup; API-key literals were removed from tracked Dart and are supplied by ignored native files or build-time defines |
 | Development project | `bm-app-74ddb` is selected and the Firebase CLI is authenticated on this workstation |
 | Authentication | Email/password and Phone providers are enabled; the Android debug SHA-1/SHA-256 fingerprints are registered |
 | Firestore | The default database was created in immutable multi-region `nam5`; restrictive rules and indexes are deployed; 48 clearly identified development documents are seeded |

@@ -25,7 +25,7 @@ This requires Admin SDK credentials or a trusted Firebase environment. Never com
 
 ## Milestone 5 operational setup
 
-Configure only a development Firebase project first. The local Android `google-services.json`, iOS `GoogleService-Info.plist` (both ignored), and committed public `lib/firebase_options.dart` currently target `bm-app-74ddb`. Firestore rules/indexes are deployed and development seed data is installed. The client chose to retain the Spark plan, so do not provision Storage or deploy Functions; use the emulator suite to validate those code paths. Follow [notifications.md](notifications.md) for platform prerequisites if that scope is revisited.
+Configure only a development Firebase project first. The local Android `google-services.json` and iOS `GoogleService-Info.plist` (both ignored) target `bm-app-74ddb`. The committed `lib/firebase_options.dart` retains non-secret app/project identifiers but reads API keys from build-time Dart defines when explicit options are required. Firestore rules/indexes are deployed and development seed data is installed. The client chose to retain the Spark plan, so do not provision Storage or deploy Functions; use the emulator suite to validate those code paths. Follow [notifications.md](notifications.md) for platform prerequisites if that scope is revisited.
 
 For Microsoft reporting, create the development workbook/tables before deploying workers and set the seven Graph values with `firebase functions:secrets:set`. Follow the least-privilege app registration and recovery procedure in [reporting.md](reporting.md). Missing credentials deliberately create a private failed sync state rather than a fake Excel success.
 
@@ -33,7 +33,7 @@ For Microsoft reporting, create the development workbook/tables before deploying
 
 1. The selected development project is `bm-app-74ddb`; its default Firestore database uses immutable multi-region `nam5`.
 2. Android and iOS are registered with the currently temporary identifier `com.example.bm`; their downloaded native configuration stays ignored by Git.
-3. `lib/firebase_options.dart` contains Firebase public configuration and is committed so Android/iOS startup is compile-safe.
+3. `lib/firebase_options.dart` contains non-secret Firebase project/app identifiers. API-key literals must not be committed. Normal mobile builds read the ignored native files; CI may inject `BM_FIREBASE_ANDROID_API_KEY` or `BM_FIREBASE_IOS_API_KEY` using `--dart-define` from its secret store.
 4. Email/password and Phone Authentication are enabled, and Android debug SHA-1/SHA-256 fingerprints are registered. Review authorized domains and complete iOS/APNs configuration before external testing.
 5. Firestore rules/indexes are deployed and 48 development category/product/location/price/settings documents have been seeded. Never rerun a development seed against production.
 6. Do not provision Storage or deploy Functions while the Spark-plan decision remains. Continue validating those code paths with the local emulator suite.

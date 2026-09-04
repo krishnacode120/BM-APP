@@ -7,9 +7,14 @@ import 'firebase_options.dart';
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
   try {
-    await Firebase.initializeApp(
-      options: DefaultFirebaseOptions.currentPlatform,
-    );
+    if (DefaultFirebaseOptions.hasEnvironmentConfiguration) {
+      await Firebase.initializeApp(
+        options: DefaultFirebaseOptions.currentPlatform,
+      );
+    } else {
+      // Android/iOS read the ignored native Firebase configuration files.
+      await Firebase.initializeApp();
+    }
   } catch (_) {
     // Local UI development remains available before Firebase platform files exist.
     // On web, firebase_core_web throws an AssertionError (not FirebaseException)

@@ -34,12 +34,14 @@ Milestone 5 adds a durable operational outbox: FCM device-token registration, to
 1. Install Flutter (stable channel) and run `flutter doctor`.
 2. Run `flutter pub get` in this directory.
 3. Copy `.env.example` to `.env` if local tooling needs it. Do not commit it.
-4. Development is configured for `bm-app-74ddb`. For another environment, register the platform apps and replace the ignored `google-services.json` / `GoogleService-Info.plist`, then regenerate `lib/firebase_options.dart` with FlutterFire CLI.
+4. Development is configured for `bm-app-74ddb`. The native `google-services.json` / `GoogleService-Info.plist` files are ignored and provide API keys locally; tracked Dart source contains no API-key literals. For another environment, register new platform apps and replace those local files.
 5. Development Email/Password and Phone Authentication plus Android debug SHA keys are enabled. Configure iOS APNs before testing on an iPhone.
 6. Install backend dependencies with `npm install` in `functions/`, then run `npm run build`.
 7. Run `flutter run --dart-define=BM_ENV=development`.
 
 `bm-app-74ddb` intentionally remains on the Spark plan. Firestore catalog and authentication are configured live; Storage uploads and Cloud Functions-backed order/admin/notification/reporting operations must be tested with the local emulator and are unavailable in the live development project.
+
+When a CI/mobile build cannot use the native Firebase files, inject the applicable key using `--dart-define=BM_FIREBASE_ANDROID_API_KEY=...` or `--dart-define=BM_FIREBASE_IOS_API_KEY=...`. Keep those values in the CI secret store, never in source control or command logs.
 
 ## Checks
 
