@@ -47,6 +47,8 @@ When a CI/mobile build cannot use the native Firebase files, inject the applicab
 
 For the GitHub macOS build, signing prerequisites and Spark-safe OTP testing, see [docs/ios-build.md](docs/ios-build.md). An unsigned build is not an installable iPhone release.
 
+The completed authentication review, test results and unsigned iOS artifact are recorded in [docs/auth-ios-verification.md](docs/auth-ios-verification.md).
+
 ```powershell
 dart format .
 flutter analyze
