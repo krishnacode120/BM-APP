@@ -594,7 +594,13 @@ function customersCsv(rows) {
     return [headers, ...values].map((row) => row.map(csvCell).join(",")).join("\n");
 }
 function csvCell(value) {
-    return `"${String(value ?? "").replace(/"/g, '""')}"`;
+    const text = String(value ?? "");
+    // CSV quoting does not stop spreadsheet applications interpreting text as a
+    // formula. Preserve numeric values, but force formula-like user text to stay
+    // literal (including international phone numbers).
+    const literal = typeof value === "string" &&
+        (/^[\s\u0000-\u001f]*[=+@-]/.test(text) || /^[\t\r\n]/.test(text)) ? `'${text}` : text;
+    return `"${literal.replace(/"/g, '""')}"`;
 }
 function csvDate(value) {
     return value instanceof admin.firestore.Timestamp ? value.toDate().toISOString() : String(value ?? "");
@@ -777,6 +783,7 @@ async function currentPrice(tx, productId, locationId, now) {
     const snapshot = await tx.get(db.collection("productPrices")
         .where("productId", "==", productId)
         .where("locationId", "==", locationId)
+        .where("effectiveFrom", "<=", now)
         .orderBy("effectiveFrom", "desc")
         .limit(5));
     for (const doc of snapshot.docs) {
@@ -785,7 +792,8 @@ async function currentPrice(tx, productId, locationId, now) {
         const effectiveTo = data.effectiveTo;
         if ((!effectiveFrom || effectiveFrom.toMillis() <= now.toMillis()) &&
             (!effectiveTo || effectiveTo.toMillis() > now.toMillis())) {
-            return Number(data.price);
+            return typeof data.price === "number" && Number.isFinite(data.price) && data.price >= 0
+                ? data.price : null;
         }
     }
     return null;
@@ -816,5 +824,6 @@ exports.testHooks = {
     revenueCsv,
     productsCsv,
     customersCsv,
+    currentPrice,
 };
 //# sourceMappingURL=index.js.map

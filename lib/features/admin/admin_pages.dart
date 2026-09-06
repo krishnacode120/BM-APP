@@ -37,9 +37,19 @@ class AdminGatePage extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final access = ref.watch(adminAccessProvider);
     return access.when(
+      skipLoadingOnRefresh: false,
+      skipLoadingOnReload: false,
       loading: () =>
           const Scaffold(body: Center(child: CircularProgressIndicator())),
-      error: (_, __) => const _AdminDenied(),
+      error: (_, __) => Scaffold(
+        body: SafeArea(
+          child: BmEmptyState(
+            title: adminText(context).unableAdminAccess,
+            actionLabel: adminText(context).tryAgain,
+            onAction: () => ref.invalidate(adminAccessProvider),
+          ),
+        ),
+      ),
       data: (allowed) => !allowed
           ? const _AdminDenied()
           : orderId == null

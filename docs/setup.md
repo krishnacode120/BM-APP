@@ -1,5 +1,7 @@
 # Firebase and environment setup
 
+For iOS builds, APNs/reCAPTCHA setup, signing and the GitHub Actions secret, see [ios-build.md](ios-build.md). Real phone verification SMS currently requires Firebase Blaze; this project must remain Spark, so use fictional Firebase test numbers/codes or the Auth emulator. Admin email/password authentication does not require an SMS upgrade.
+
 Use distinct Firebase projects for development, staging, and production. Development currently uses `bm-app-74ddb`. Its Android/iOS apps and FlutterFire options are configured; the native config files remain local and ignored by Git.
 
 Email/password and Phone Authentication are enabled in development, and the Android debug SHA-1/SHA-256 values are registered. APNs/iOS device setup and authorized-domain review remain. Use `--dart-define=BM_ENV=development|staging|production`; no credential belongs in source code.
@@ -32,7 +34,7 @@ For Microsoft reporting, create the development workbook/tables before deploying
 ### Development Firebase workflow
 
 1. The selected development project is `bm-app-74ddb`; its default Firestore database uses immutable multi-region `nam5`.
-2. Android and iOS are registered with the currently temporary identifier `com.example.bm`; their downloaded native configuration stays ignored by Git. The Xcode Runner target includes `GoogleService-Info.plist` in its resources when that local file is present.
+2. Android and iOS are registered with the currently temporary identifier `com.example.bm`; their downloaded native configuration stays ignored by Git. The Xcode Runner target requires `GoogleService-Info.plist` in its resources; restore it locally or through the approved Actions secret before building.
 3. `lib/firebase_options.dart` contains non-secret Firebase project/app identifiers. API-key literals must not be committed. Normal mobile builds read the ignored native files; CI may inject `BM_FIREBASE_ANDROID_API_KEY` or `BM_FIREBASE_IOS_API_KEY` using `--dart-define` from its secret store.
 4. Email/password and Phone Authentication are enabled, and Android debug SHA-1/SHA-256 fingerprints are registered. Review authorized domains and complete iOS/APNs configuration before external testing.
 5. Firestore rules/indexes are deployed and 48 development category/product/location/price/settings documents have been seeded. Never rerun a development seed against production.

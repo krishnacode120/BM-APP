@@ -1,5 +1,9 @@
 # Security baseline
 
+Authentication hardening preserves the existing rules: OTP login never rewrites an existing profile's role, active status or verified phone. Admin/customer/cart/order caches reset when accounts change. CSV exports prefix formula-like string values to keep spreadsheet applications from executing user-entered formulas. Numeric report values remain numeric.
+
+The approved iOS workflow restores Firebase client configuration from an Actions secret, not from Git. Its public unsigned artifact still embeds that client configuration as any mobile app does. No service-account credentials, admin passwords, Apple signing material or APNs private keys belong in the workflow or artifact.
+
 Phone authentication is performed through Firebase Authentication. Role checks will use custom claims validated by Firestore rules and Cloud Functions; client-side role checks are display-only.
 
 Customer profile creation is restricted to the signed-in UID, the `customer` role, an active/verified profile, and the exact Firebase Auth phone claim. A customer update cannot change role, verified state, phone, active state, or timestamps outside the allowed name/update fields. This closes the previous profile-role escalation path.

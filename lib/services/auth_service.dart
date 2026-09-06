@@ -7,47 +7,138 @@ class AuthFailure implements Exception {
   final String code;
 }
 
+sealed class PhoneVerificationEvent {
+  const PhoneVerificationEvent();
+}
+
+class PhoneCodeSentEvent extends PhoneVerificationEvent {
+  const PhoneCodeSentEvent(this.verificationId);
+  final String verificationId;
+}
+
+class PhoneVerified extends PhoneVerificationEvent {
+  const PhoneVerified(this.credential);
+  final UserCredential credential;
+}
+
 abstract interface class AuthService {
-  Future<void> requestOtp(
-      {required String phoneNumber,
-      required void Function(String verificationId) onCodeSent});
+  Stream<PhoneVerificationEvent> requestOtp({
+    required String phoneNumber,
+    bool forceResend = false,
+  });
   Future<UserCredential> verifyOtp(
       {required String verificationId, required String smsCode});
 }
 
 class FirebasePhoneAuthService implements AuthService {
-  FirebasePhoneAuthService(this._auth);
+  FirebasePhoneAuthService(this._auth,
+      {this.requestTimeout = const Duration(seconds: 90)});
   final FirebaseAuth _auth;
+  final Duration requestTimeout;
+  String? _resendPhone;
+  int? _resendToken;
 
   @override
-  Future<void> requestOtp(
-      {required String phoneNumber,
-      required void Function(String verificationId) onCodeSent}) {
-    final completer = Completer<void>();
-    _auth.verifyPhoneNumber(
-      phoneNumber: phoneNumber,
-      verificationCompleted: (PhoneAuthCredential _) {},
-      verificationFailed: (FirebaseAuthException error) {
-        if (!completer.isCompleted) {
-          completer.completeError(AuthFailure(error.code));
+  Stream<PhoneVerificationEvent> requestOtp({
+    required String phoneNumber,
+    bool forceResend = false,
+  }) {
+    late StreamController<PhoneVerificationEvent> controller;
+    Timer? timeout;
+    var active = true;
+    var codeSent = false;
+    var completing = false;
+
+    void close() {
+      if (!active) return;
+      active = false;
+      timeout?.cancel();
+      unawaited(controller.close());
+    }
+
+    void fail(Object error) {
+      if (!active) return;
+      controller.addError(error is FirebaseAuthException
+          ? AuthFailure(error.code)
+          : error is AuthFailure
+              ? error
+              : const AuthFailure('otpRequestFailed'));
+      close();
+    }
+
+    Future<void> start() async {
+      timeout = Timer(requestTimeout, () {
+        if (codeSent) {
+          close();
+        } else {
+          fail(const AuthFailure('otpRequestTimeout'));
         }
+      });
+      try {
+        await _auth.verifyPhoneNumber(
+          phoneNumber: phoneNumber,
+          forceResendingToken:
+              forceResend && _resendPhone == phoneNumber ? _resendToken : null,
+          verificationCompleted: (credential) async {
+            if (!active || completing) return;
+            completing = true;
+            try {
+              final result = await _auth.signInWithCredential(credential);
+              if (!active) return;
+              if (result.user == null) {
+                fail(const AuthFailure('invalidOtp'));
+                return;
+              }
+              controller.add(PhoneVerified(result));
+              close();
+            } catch (error) {
+              fail(error);
+            }
+          },
+          verificationFailed: fail,
+          codeSent: (verificationId, token) {
+            if (!active || completing) return;
+            _resendPhone = phoneNumber;
+            _resendToken = token;
+            codeSent = true;
+            controller.add(PhoneCodeSentEvent(verificationId));
+          },
+          codeAutoRetrievalTimeout: (verificationId) {
+            if (!active || completing) return;
+            // Native auto retrieval expiring does not invalidate manual entry.
+            if (!codeSent && verificationId.isNotEmpty) {
+              controller.add(PhoneCodeSentEvent(verificationId));
+            }
+            close();
+          },
+        );
+      } catch (error) {
+        fail(error);
+      }
+    }
+
+    controller = StreamController<PhoneVerificationEvent>(
+      onListen: () => unawaited(start()),
+      onCancel: () {
+        active = false;
+        timeout?.cancel();
       },
-      codeSent: (String verificationId, int? _) {
-        onCodeSent(verificationId);
-        if (!completer.isCompleted) completer.complete();
-      },
-      codeAutoRetrievalTimeout: (_) {},
     );
-    return completer.future;
+    return controller.stream;
   }
 
   @override
   Future<UserCredential> verifyOtp(
       {required String verificationId, required String smsCode}) async {
+    if (verificationId.isEmpty || !RegExp(r'^\d{6}$').hasMatch(smsCode)) {
+      throw const AuthFailure('invalidOtp');
+    }
     try {
-      final PhoneAuthCredential credential = PhoneAuthProvider.credential(
+      final credential = PhoneAuthProvider.credential(
           verificationId: verificationId, smsCode: smsCode);
-      return await _auth.signInWithCredential(credential);
+      final result = await _auth.signInWithCredential(credential);
+      if (result.user == null) throw const AuthFailure('invalidOtp');
+      return result;
     } on FirebaseAuthException catch (error) {
       throw AuthFailure(error.code);
     }
@@ -58,10 +149,12 @@ class UnavailableAuthService implements AuthService {
   const UnavailableAuthService();
 
   @override
-  Future<void> requestOtp(
-          {required String phoneNumber,
-          required void Function(String verificationId) onCodeSent}) =>
-      Future<void>.error(const AuthFailure('firebaseUnavailable'));
+  Stream<PhoneVerificationEvent> requestOtp({
+    required String phoneNumber,
+    bool forceResend = false,
+  }) =>
+      Stream<PhoneVerificationEvent>.error(
+          const AuthFailure('firebaseUnavailable'));
 
   @override
   Future<UserCredential> verifyOtp(

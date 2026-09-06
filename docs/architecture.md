@@ -1,5 +1,13 @@
 # Architecture
 
+## Authentication lifecycle hardening
+
+The OTP route owns an auto-disposed Riverpod `OtpController`; the login form only validates identity and opens that route. `AuthService` exposes native code-sent and automatic-verification events, catches asynchronous SDK failures and bounds requests without callbacks. Cancellation prevents stale callbacks from driving navigation; resend replaces the session ID and uses Android's token only for the same phone (iOS returns no token). Both automatic and manual verification must save a valid customer profile before navigation.
+
+Firebase `authStateChanges` drives shared session state. Customer/admin/order providers depend on it; admin data also depends on a fresh authorization check. Cart persistence captures the account-specific key before asynchronous writes, and rejects stale load/revalidation results. Checkout fields and in-flight response ownership reset on account changes. OTP profile updates use a transaction and modify only name/update timestamp for existing active customers; they cannot demote admins or reactivate disabled users.
+
+Frontend/backend price queries now exclude future `effectiveFrom` timestamps before applying the existing five-record bound. This prevents scheduled prices from hiding today's price. Overlapping/incorrect historical periods still require trusted data maintenance; order snapshots remain immutable. Backend CSV exporters escape formula-like text in addition to normal CSV quoting.
+
 The customer app follows a feature-first, layered structure: presentation widgets use Riverpod providers; providers depend on repository contracts; repositories hide Firebase/HTTP implementations; services encapsulate SDK calls. Domain models have no widget dependencies.
 
 The sample catalog remains deliberately isolated for local UI development before Firebase platform files exist. Product, category, location, pricing and order UI code depends on repositories/providers, not Firestore directly.

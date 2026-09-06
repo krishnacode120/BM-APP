@@ -361,6 +361,30 @@ class AppLocalizations {
             : 'Unable to complete the action. Please try again.',
       };
   String get email => isTamil ? 'மின்னஞ்சல்' : 'Email';
+  String get unableAdminAccess => isTamil
+      ? 'நிர்வாக அணுகலைச் சரிபார்க்க முடியவில்லை. மீண்டும் முயற்சிக்கவும்.'
+      : 'Unable to check admin access. Please try again.';
+  String adminLoginError(String code) => switch (code) {
+        'firebaseUnavailable' => firebaseUnavailable,
+        'invalid-email' => isTamil
+            ? 'சரியான மின்னஞ்சல் முகவரியை உள்ளிடவும்.'
+            : 'Enter a valid email address.',
+        'missing-password' =>
+          isTamil ? 'உங்கள் கடவுச்சொல்லை உள்ளிடவும்.' : 'Enter your password.',
+        'wrong-password' || 'invalid-credential' || 'user-not-found' => isTamil
+            ? 'மின்னஞ்சல் அல்லது கடவுச்சொல் தவறானது.'
+            : 'The email or password is incorrect.',
+        'user-disabled' => isTamil
+            ? 'இந்தக் கணக்கு முடக்கப்பட்டுள்ளது. BM-ஐத் தொடர்புகொள்ளவும்.'
+            : 'This account is disabled. Contact BM.',
+        'network-request-failed' => isTamil
+            ? 'இணைய இணைப்பைச் சரிபார்த்து மீண்டும் முயற்சிக்கவும்.'
+            : 'Check your internet connection and try again.',
+        'too-many-requests' => authError(code),
+        _ => isTamil
+            ? 'உள்நுழைய முடியவில்லை. மீண்டும் முயற்சிக்கவும்.'
+            : 'Unable to sign in. Please try again.',
+      };
   String get password => isTamil ? 'கடவுச்சொல்' : 'Password';
   String get audit => isTamil ? 'தணிக்கை' : 'Audit';
   String get deliveryIntegrationPending => isTamil
@@ -579,31 +603,57 @@ class AppLocalizations {
       ? 'அறிவிப்புகள் இன்னும் இயக்கப்படவில்லை'
       : 'Notifications are not enabled yet';
   String get firebaseUnavailable => isTamil
-      ? 'ஆர்டர் செய்ய Firebase development அமைப்பு தேவை.'
-      : 'Order submission requires Firebase development configuration.';
+      ? 'இந்தப் பதிப்பில் சேவையுடன் இணைக்க முடியவில்லை. BM-ஐத் தொடர்புகொள்ளவும்.'
+      : 'This app version cannot connect to the service. Please contact BM.';
   String get resendOtp =>
       isTamil ? 'குறியீட்டை மீண்டும் அனுப்பவும்' : 'Resend code';
   String resendOtpIn(int seconds) => isTamil
       ? '$seconds வினாடிகளில் மீண்டும் அனுப்பலாம்'
       : 'Resend in ${seconds}s';
+  String get otpCode =>
+      isTamil ? 'ஒருமுறை கடவுக்குறியீடு' : 'Verification code';
   String get otpInstruction => isTamil
       ? 'உங்கள் மொபைல் எண்ணுக்கு அனுப்பப்பட்ட 6 இலக்க குறியீட்டை உள்ளிடவும்.'
       : 'Enter the 6-digit code sent to your mobile number.';
   String verifyPhone(String phone) =>
       isTamil ? '$phone ஐச் சரிபார்க்கவும்' : 'Verify $phone';
   String authError(String code) => switch (code) {
-        'firebaseUnavailable' => isTamil
-            ? 'உள்நுழைய Firebase development அமைப்பு தேவை.'
-            : 'Phone login requires Firebase development configuration.',
-        'invalidPhone' => isTamil
+        'firebaseUnavailable' => firebaseUnavailable,
+        'invalidPhone' || 'invalid-phone-number' => isTamil
             ? 'சரியான 10 இலக்க மொபைல் எண்ணை உள்ளிடவும்.'
             : 'Enter a valid 10-digit mobile number.',
-        'invalidOtp' || 'invalid-verification-code' => isTamil
-            ? 'தவறான அல்லது காலாவதியான குறியீடு.'
-            : 'The code is invalid or expired.',
+        'invalidOtp' ||
+        'invalid-verification-code' ||
+        'session-expired' ||
+        'invalid-verification-id' =>
+          isTamil
+              ? 'தவறான அல்லது காலாவதியான குறியீடு.'
+              : 'The code is invalid or expired.',
         'too-many-requests' => isTamil
             ? 'பல முயற்சிகள் செய்யப்பட்டுள்ளன. பிறகு முயற்சிக்கவும்.'
             : 'Too many attempts. Please try again later.',
+        'otpRequestTimeout' => isTamil
+            ? 'சரிபார்ப்பு பதில் வரவில்லை. மீண்டும் முயற்சிக்கவும்.'
+            : 'No verification response was received. Please try again.',
+        'customerProfileFailed' => isTamil
+            ? 'மொபைல் எண் சரிபார்க்கப்பட்டது. விவரங்களைச் சேமிக்க மீண்டும் முயற்சிக்கவும்.'
+            : 'Your phone was verified, but your profile could not be saved. Please try again.',
+        'customerInactive' || 'user-disabled' => isTamil
+            ? 'இந்தக் கணக்கு செயல்பாட்டில் இல்லை. BM-ஐத் தொடர்புகொள்ளவும்.'
+            : 'This account is inactive. Contact BM.',
+        'customerRoleMismatch' => isTamil
+            ? 'இந்தக் கணக்கிற்கு நிர்வாக உள்நுழைவைப் பயன்படுத்தவும்.'
+            : 'Use admin login for this account.',
+        'phoneMismatch' => isTamil
+            ? 'மொபைல் சரிபார்ப்பு இந்தக் கணக்குடன் பொருந்தவில்லை. மீண்டும் உள்நுழையவும்.'
+            : 'Phone verification does not match this account. Please sign in again.',
+        'network-request-failed' => adminLoginError(code),
+        'billing-not-enabled' ||
+        'quota-exceeded' ||
+        'operation-not-allowed' =>
+          isTamil
+              ? 'SMS உள்நுழைவு தற்போது கிடைக்கவில்லை. BM-ஐத் தொடர்புகொள்ளவும்.'
+              : 'SMS sign-in is currently unavailable. Please contact BM.',
         _ => isTamil
             ? 'குறியீட்டை அனுப்ப அல்லது சரிபார்க்க முடியவில்லை. மீண்டும் முயற்சிக்கவும்.'
             : 'Unable to send or verify the code. Please try again.',

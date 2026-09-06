@@ -25,6 +25,7 @@ final GoRouter appRouter = GoRouter(
     GoRoute(path: '/signup', builder: (_, __) => const SignUpPage()),
     GoRoute(
         path: '/otp',
+        redirect: (_, state) => state.extra is OtpArguments ? null : '/login',
         builder: (_, state) =>
             OtpPage(arguments: state.extra! as OtpArguments)),
     GoRoute(

@@ -39,11 +39,13 @@ Milestone 5 adds a durable operational outbox: FCM device-token registration, to
 6. Install backend dependencies with `npm install` in `functions/`, then run `npm run build`.
 7. Run `flutter run --dart-define=BM_ENV=development`.
 
-`bm-app-74ddb` intentionally remains on the Spark plan. Firestore catalog and authentication are configured live; Storage uploads and Cloud Functions-backed order/admin/notification/reporting operations must be tested with the local emulator and are unavailable in the live development project.
+`bm-app-74ddb` intentionally remains on the Spark plan. Firestore catalog and email/password authentication are configured live. **Real phone-verification SMS requires Blaze under current Firebase limits**; use Firebase-configured fictional test phone numbers/codes or the Auth emulator without changing billing. Storage uploads and Cloud Functions-backed order/admin/notification/reporting operations must be tested with the local emulator and are unavailable in the live development project.
 
 When a CI/mobile build cannot use the native Firebase files, inject the applicable key using `--dart-define=BM_FIREBASE_ANDROID_API_KEY=...` or `--dart-define=BM_FIREBASE_IOS_API_KEY=...`. Keep those values in the CI secret store, never in source control or command logs.
 
 ## Checks
+
+For the GitHub macOS build, signing prerequisites and Spark-safe OTP testing, see [docs/ios-build.md](docs/ios-build.md). An unsigned build is not an installable iPhone release.
 
 ```powershell
 dart format .

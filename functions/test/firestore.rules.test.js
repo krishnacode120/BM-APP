@@ -12,7 +12,7 @@ let testEnv;
 describe("firestore security rules", () => {
   before(async () => {
     testEnv = await initializeTestEnvironment({
-      projectId: "bm-test",
+      projectId: "demo-bm-test",
       firestore: {
         rules: fs.readFileSync(path.resolve(__dirname, "../../firestore.rules"), "utf8"),
       },

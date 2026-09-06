@@ -1,67 +1,83 @@
 import 'dart:async';
 
-import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../l10n/app_localizations.dart';
-import '../../services/auth_service.dart';
 import 'auth_providers.dart';
-
-class OtpArguments {
-  const OtpArguments({
-    required this.phone,
-    required this.verificationId,
-    required this.fullName,
-    required this.createAccount,
-  });
-  final String phone;
-  final String verificationId;
-  final String fullName;
-  final bool createAccount;
-}
+import 'otp_controller.dart';
+export 'otp_controller.dart' show OtpArguments;
 
 class OtpPage extends ConsumerStatefulWidget {
   const OtpPage({required this.arguments, super.key});
   final OtpArguments arguments;
-
   @override
   ConsumerState<OtpPage> createState() => _OtpPageState();
 }
 
 class _OtpPageState extends ConsumerState<OtpPage> {
   final code = TextEditingController();
-  late String verificationId = widget.arguments.verificationId;
-  bool isVerifying = false;
-  bool isResending = false;
-  String? errorCode;
-  int resendSeconds = 30;
-  Timer? resendTimer;
+  Timer? _resendTimer;
+  int _resendSeconds = 0;
 
   @override
   void initState() {
     super.initState();
-    _startResendCountdown();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (mounted) {
+        ref.read(otpControllerProvider(widget.arguments).notifier).request();
+      }
+    });
   }
 
   @override
   void dispose() {
-    resendTimer?.cancel();
+    _resendTimer?.cancel();
     code.dispose();
     super.dispose();
+  }
+
+  void _startCountdown() {
+    _resendTimer?.cancel();
+    final deadline = DateTime.now().add(const Duration(seconds: 30));
+    setState(() => _resendSeconds = 30);
+    _resendTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
+      if (!mounted) {
+        timer.cancel();
+        return;
+      }
+      final remaining = deadline.difference(DateTime.now()).inMilliseconds;
+      setState(() =>
+          _resendSeconds = remaining <= 0 ? 0 : (remaining / 1000).ceil());
+      if (_resendSeconds == 0) timer.cancel();
+    });
   }
 
   @override
   Widget build(BuildContext context) {
     final t = AppLocalizations.of(context);
+    final provider = otpControllerProvider(widget.arguments);
+    final state = ref.watch(provider);
+    ref.listen<OtpState>(provider, (previous, next) {
+      if (previous?.requesting != true && next.requesting) _startCountdown();
+      if (next.completed && previous?.completed != true) {
+        ref.invalidate(currentCustomerProvider);
+        context.go('/home');
+      }
+    });
     return Scaffold(
-        appBar: AppBar(),
-        body: Padding(
-            padding: const EdgeInsets.all(24),
+      appBar: AppBar(),
+      body: SafeArea(
+          child: Center(
+              child: SingleChildScrollView(
+        padding: const EdgeInsets.all(24),
+        child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 460),
             child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: <Widget>[
+                children: [
                   Text(t.verifyPhone(widget.arguments.phone),
                       style: Theme.of(context).textTheme.headlineSmall),
                   const SizedBox(height: 8),
@@ -69,97 +85,42 @@ class _OtpPageState extends ConsumerState<OtpPage> {
                   const SizedBox(height: 28),
                   TextField(
                       controller: code,
+                      enabled: !state.busy,
                       keyboardType: TextInputType.number,
+                      textInputAction: TextInputAction.done,
+                      autofillHints: const [AutofillHints.oneTimeCode],
+                      inputFormatters: [FilteringTextInputFormatter.digitsOnly],
                       maxLength: 6,
-                      decoration:
-                          const InputDecoration(hintText: '• • • • • •')),
-                  if (errorCode != null)
-                    Text(t.authError(errorCode!),
-                        style: TextStyle(
-                            color: Theme.of(context).colorScheme.error)),
+                      onSubmitted: (_) =>
+                          ref.read(provider.notifier).verify(code.text),
+                      decoration: InputDecoration(
+                          labelText: t.otpCode, hintText: '• • • • • •')),
+                  if (state.errorCode != null)
+                    Semantics(
+                        liveRegion: true,
+                        child: Text(t.authError(state.errorCode!),
+                            style: TextStyle(
+                                color: Theme.of(context).colorScheme.error))),
                   TextButton(
-                      onPressed:
-                          isResending || resendSeconds > 0 ? null : _resend,
-                      child: Text(isResending
+                      onPressed: state.busy || _resendSeconds > 0
+                          ? null
+                          : () {
+                              code.clear();
+                              ref.read(provider.notifier).request(resend: true);
+                            },
+                      child: Text(state.requesting
                           ? t.loading
-                          : resendSeconds > 0
-                              ? t.resendOtpIn(resendSeconds)
+                          : _resendSeconds > 0
+                              ? t.resendOtpIn(_resendSeconds)
                               : t.resendOtp)),
-                  const Spacer(),
+                  const SizedBox(height: 24),
                   FilledButton(
-                      onPressed: isVerifying ? null : _verify,
-                      child: isVerifying
-                          ? const SizedBox(
-                              width: 18,
-                              height: 18,
-                              child: CircularProgressIndicator(strokeWidth: 2))
-                          : Text(t.verify))
-                ])));
-  }
-
-  Future<void> _verify() async {
-    if (code.text.trim().length != 6) {
-      setState(() => errorCode = 'invalidOtp');
-      return;
-    }
-    setState(() {
-      isVerifying = true;
-      errorCode = null;
-    });
-    try {
-      final credential = await ref
-          .read(authServiceProvider)
-          .verifyOtp(verificationId: verificationId, smsCode: code.text.trim());
-      final user = credential.user;
-      if (user != null && Firebase.apps.isNotEmpty) {
-        await ref.read(customerRepositoryProvider).saveVerifiedCustomer(
-              user: user,
-              name: widget.arguments.fullName,
-              phoneNumber: widget.arguments.phone,
-            );
-        ref.invalidate(currentCustomerProvider);
-      }
-      if (mounted) context.go('/home');
-    } on AuthFailure catch (error) {
-      if (mounted) setState(() => errorCode = error.code);
-    } catch (_) {
-      if (mounted) setState(() => errorCode = 'invalidOtp');
-    } finally {
-      if (mounted) setState(() => isVerifying = false);
-    }
-  }
-
-  Future<void> _resend() async {
-    setState(() {
-      isResending = true;
-      errorCode = null;
-    });
-    try {
-      await ref.read(authServiceProvider).requestOtp(
-          phoneNumber: widget.arguments.phone,
-          onCodeSent: (value) {
-            verificationId = value;
-            if (mounted) _startResendCountdown();
-          });
-    } on AuthFailure catch (error) {
-      if (mounted) setState(() => errorCode = error.code);
-    } catch (_) {
-      if (mounted) setState(() => errorCode = 'otpRequestFailed');
-    } finally {
-      if (mounted) setState(() => isResending = false);
-    }
-  }
-
-  void _startResendCountdown() {
-    resendTimer?.cancel();
-    setState(() => resendSeconds = 30);
-    resendTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
-      if (!mounted || resendSeconds <= 1) {
-        timer.cancel();
-        if (mounted) setState(() => resendSeconds = 0);
-        return;
-      }
-      setState(() => resendSeconds--);
-    });
+                      onPressed: state.busy || state.verificationId == null
+                          ? null
+                          : () => ref.read(provider.notifier).verify(code.text),
+                      child: Text(state.busy ? t.loading : t.verify)),
+                ])),
+      ))),
+    );
   }
 }

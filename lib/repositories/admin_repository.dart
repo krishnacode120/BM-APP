@@ -287,14 +287,16 @@ class FirebaseAdminRepository implements AdminRepository {
 
   @override
   Future<bool> isCurrentUserAdmin() async {
-    if (Firebase.apps.isEmpty || auth.currentUser == null) return false;
-    final token = await auth.currentUser!.getIdTokenResult(true);
+    if (Firebase.apps.isEmpty) return false;
+    final user = auth.currentUser;
+    if (user == null) return false;
+    final token = await user.getIdTokenResult(true);
     final hasClaim =
         token.claims?['admin'] == true || token.claims?['role'] == 'admin';
-    if (!hasClaim) return false;
-    final profile =
-        await db.collection('users').doc(auth.currentUser!.uid).get();
-    return profile.exists &&
+    if (!hasClaim || auth.currentUser?.uid != user.uid) return false;
+    final profile = await db.collection('users').doc(user.uid).get();
+    return auth.currentUser?.uid == user.uid &&
+        profile.exists &&
         profile.data()?['role'] == 'admin' &&
         profile.data()?['isActive'] != false;
   }

@@ -19,6 +19,7 @@ String? validateCustomerName(String value) {
 }
 
 String? normalizeIndianPhone(String value) {
+  if (!RegExp(r'^\+?[\d\s()-]+$').hasMatch(value.trim())) return null;
   var digits = value.replaceAll(RegExp(r'\D'), '');
   if (digits.startsWith('91') && digits.length == 12) {
     digits = digits.substring(2);
@@ -27,6 +28,19 @@ String? normalizeIndianPhone(String value) {
     return null;
   }
   return '+91$digits';
+}
+
+// Existing security/identity fields are server-owned, never reset by OTP login.
+void validateExistingCustomer(Map<String, dynamic> data, String phoneNumber) {
+  if (data['role'] != 'customer') {
+    throw const CustomerFailure('customerRoleMismatch');
+  }
+  if (data['isActive'] != true) {
+    throw const CustomerFailure('customerInactive');
+  }
+  if (data['phoneVerified'] != true || data['phoneNumber'] != phoneNumber) {
+    throw const CustomerFailure('phoneMismatch');
+  }
 }
 
 abstract interface class CustomerRepository {
@@ -51,9 +65,14 @@ class FirebaseCustomerRepository implements CustomerRepository {
   @override
   Future<CustomerProfile?> currentProfile() async {
     final user = _auth.currentUser;
-    if (user == null) return null;
+    if (user == null || user.phoneNumber == null) return null;
     final document = await _db.collection('users').doc(user.uid).get();
-    if (!document.exists) return null;
+    if (!document.exists || _auth.currentUser?.uid != user.uid) return null;
+    try {
+      validateExistingCustomer(document.data()!, user.phoneNumber!);
+    } on CustomerFailure {
+      return null;
+    }
     final profile = CustomerProfile.fromFirestore(document);
     return profile.isActive && profile.phoneVerified ? profile : null;
   }
@@ -65,8 +84,12 @@ class FirebaseCustomerRepository implements CustomerRepository {
   }) async {
     final user = _auth.currentUser;
     if (user == null || user.phoneNumber != phoneNumber) return null;
+    if (validateCustomerName(name) != null) {
+      throw const CustomerFailure('invalidName');
+    }
     final document = await _db.collection('users').doc(user.uid).get();
-    if (!document.exists) return null;
+    if (!document.exists || _auth.currentUser?.uid != user.uid) return null;
+    validateExistingCustomer(document.data()!, phoneNumber);
     final profile = CustomerProfile.fromFirestore(document);
     if (!profile.isActive ||
         !profile.phoneVerified ||
@@ -98,23 +121,42 @@ class FirebaseCustomerRepository implements CustomerRepository {
     required String name,
     required String phoneNumber,
   }) async {
-    if (user.phoneNumber != phoneNumber) {
+    if (user.phoneNumber != phoneNumber || _auth.currentUser?.uid != user.uid) {
       throw const CustomerFailure('phoneMismatch');
     }
+    if (validateCustomerName(name) != null) {
+      throw const CustomerFailure('invalidName');
+    }
     final reference = _db.collection('users').doc(user.uid);
-    final existing = await reference.get();
-    final now = FieldValue.serverTimestamp();
-    await reference.set(<String, Object?>{
-      'uid': user.uid,
-      'name': name.trim().replaceAll(RegExp(r'\s+'), ' '),
-      'phoneNumber': phoneNumber,
-      'role': 'customer',
-      'phoneVerified': true,
-      'isActive': true,
-      if (!existing.exists) 'createdAt': now,
-      'updatedAt': now,
-    }, SetOptions(merge: true));
+    await _db.runTransaction((transaction) async {
+      final existing = await transaction.get(reference);
+      if (_auth.currentUser?.uid != user.uid) {
+        throw const CustomerFailure('phoneMismatch');
+      }
+      final fields = <String, Object?>{
+        'name': name.trim().replaceAll(RegExp(r'\s+'), ' '),
+        'updatedAt': FieldValue.serverTimestamp(),
+      };
+      if (existing.exists) {
+        validateExistingCustomer(existing.data()!, phoneNumber);
+        transaction.update(reference, fields);
+      } else {
+        transaction.set(reference, <String, Object?>{
+          ...fields,
+          'uid': user.uid,
+          'phoneNumber': phoneNumber,
+          'role': 'customer',
+          'phoneVerified': true,
+          'isActive': true,
+          'createdAt': FieldValue.serverTimestamp(),
+        });
+      }
+    });
     final saved = await reference.get();
+    if (_auth.currentUser?.uid != user.uid) {
+      throw const CustomerFailure('phoneMismatch');
+    }
+    validateExistingCustomer(saved.data()!, phoneNumber);
     return CustomerProfile.fromFirestore(saved);
   }
 

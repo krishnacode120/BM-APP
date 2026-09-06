@@ -22,7 +22,7 @@ class CheckoutPage extends ConsumerStatefulWidget {
 }
 
 class _CheckoutPageState extends ConsumerState<CheckoutPage> {
-  bool profileApplied = false;
+  String? appliedProfileUid;
 
   @override
   Widget build(BuildContext context) {
@@ -31,8 +31,8 @@ class _CheckoutPageState extends ConsumerState<CheckoutPage> {
     final checkout = ref.watch(checkoutProvider);
     final location = ref.watch(selectedLocationProvider).valueOrNull;
     final customer = ref.watch(currentCustomerProvider).valueOrNull;
-    if (!profileApplied && customer != null) {
-      profileApplied = true;
+    if (appliedProfileUid != customer?.uid && customer != null) {
+      appliedProfileUid = customer.uid;
       Future<void>.microtask(() {
         if (!mounted) return;
         final notifier = ref.read(checkoutProvider.notifier);

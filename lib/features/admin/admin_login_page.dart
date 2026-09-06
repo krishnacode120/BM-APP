@@ -1,19 +1,21 @@
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/widgets/bm_components.dart';
 import '../../l10n/app_localizations.dart';
+import '../../repositories/admin_repository.dart';
+import 'admin_providers.dart';
 
-class AdminLoginPage extends StatefulWidget {
+class AdminLoginPage extends ConsumerStatefulWidget {
   const AdminLoginPage({super.key});
 
   @override
-  State<AdminLoginPage> createState() => _AdminLoginPageState();
+  ConsumerState<AdminLoginPage> createState() => _AdminLoginPageState();
 }
 
-class _AdminLoginPageState extends State<AdminLoginPage> {
+class _AdminLoginPageState extends ConsumerState<AdminLoginPage> {
+  final formKey = GlobalKey<FormState>();
   final email = TextEditingController();
   final password = TextEditingController();
   bool loading = false;
@@ -27,25 +29,29 @@ class _AdminLoginPageState extends State<AdminLoginPage> {
   }
 
   Future<void> _login() async {
-    if (Firebase.apps.isEmpty) {
-      setState(() => error = AppLocalizations.of(context).firebaseUnavailable);
-      return;
-    }
+    if (loading || !(formKey.currentState?.validate() ?? false)) return;
+    FocusScope.of(context).unfocus();
     setState(() {
       loading = true;
       error = null;
     });
     try {
-      await FirebaseAuth.instance.signInWithEmailAndPassword(
+      await ref.read(adminSignInProvider)(
         email: email.text.trim(),
         password: password.text,
       );
-      await FirebaseAuth.instance.currentUser?.getIdToken(true);
-      if (mounted) context.go('/admin');
-    } on FirebaseAuthException catch (exception) {
+      if (!mounted) return;
+      ref.invalidate(adminAccessProvider);
+      context.go('/admin');
+    } on AdminFailure catch (exception) {
+      if (mounted) {
+        setState(() => error =
+            AppLocalizations.of(context).adminLoginError(exception.code));
+      }
+    } catch (_) {
       if (mounted) {
         setState(() =>
-            error = AppLocalizations.of(context).adminError(exception.code));
+            error = AppLocalizations.of(context).adminLoginError('unknown'));
       }
     } finally {
       if (mounted) setState(() => loading = false);
@@ -62,47 +68,77 @@ class _AdminLoginPageState extends State<AdminLoginPage> {
             padding: const EdgeInsets.all(24),
             child: ConstrainedBox(
               constraints: const BoxConstraints(maxWidth: 420),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: <Widget>[
-                  const Center(child: BmLogo(width: 108)),
-                  const SizedBox(height: 32),
-                  Text(t.adminDashboard,
-                      textAlign: TextAlign.center,
-                      style: Theme.of(context).textTheme.headlineSmall),
-                  const SizedBox(height: 24),
-                  TextField(
-                    controller: email,
-                    keyboardType: TextInputType.emailAddress,
-                    autofillHints: const <String>[AutofillHints.username],
-                    decoration: InputDecoration(
-                      labelText: t.email,
-                      prefixIcon: const Icon(Icons.email_outlined),
-                    ),
-                  ),
-                  const SizedBox(height: 12),
-                  TextField(
-                    controller: password,
-                    obscureText: true,
-                    autofillHints: const <String>[AutofillHints.password],
-                    decoration: InputDecoration(
-                      labelText: t.password,
-                      prefixIcon: const Icon(Icons.lock_outline_rounded),
-                    ),
-                  ),
-                  if (error != null) ...<Widget>[
-                    const SizedBox(height: 12),
-                    Text(error!,
-                        style: TextStyle(
-                            color: Theme.of(context).colorScheme.error)),
-                  ],
-                  const SizedBox(height: 20),
-                  BmPrimaryButton(
-                      label: t.continueText,
-                      loading: loading,
-                      onPressed: loading ? null : _login),
-                ],
-              ),
+              child: AutofillGroup(
+                  child: Form(
+                      key: formKey,
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: <Widget>[
+                          const Center(child: BmLogo(width: 108)),
+                          const SizedBox(height: 32),
+                          Text(t.adminLogin,
+                              textAlign: TextAlign.center,
+                              style: Theme.of(context).textTheme.headlineSmall),
+                          const SizedBox(height: 24),
+                          TextFormField(
+                            controller: email,
+                            enabled: !loading,
+                            keyboardType: TextInputType.emailAddress,
+                            textInputAction: TextInputAction.next,
+                            autocorrect: false,
+                            autofillHints: const <String>[
+                              AutofillHints.username
+                            ],
+                            validator: (value) {
+                              final address = value?.trim() ?? '';
+                              if (address.isEmpty) return t.requiredField;
+                              if (!RegExp(r'^[^\s@]+@[^\s@]+\.[^\s@]+$')
+                                  .hasMatch(address)) {
+                                return t.adminLoginError('invalid-email');
+                              }
+                              return null;
+                            },
+                            decoration: InputDecoration(
+                              labelText: t.email,
+                              prefixIcon: const Icon(Icons.email_outlined),
+                            ),
+                          ),
+                          const SizedBox(height: 12),
+                          TextFormField(
+                            controller: password,
+                            enabled: !loading,
+                            obscureText: true,
+                            textInputAction: TextInputAction.done,
+                            onFieldSubmitted: (_) => _login(),
+                            validator: (value) => value == null || value.isEmpty
+                                ? t.requiredField
+                                : null,
+                            autofillHints: const <String>[
+                              AutofillHints.password
+                            ],
+                            decoration: InputDecoration(
+                              labelText: t.password,
+                              prefixIcon:
+                                  const Icon(Icons.lock_outline_rounded),
+                            ),
+                          ),
+                          if (error != null) ...<Widget>[
+                            const SizedBox(height: 12),
+                            Semantics(
+                                liveRegion: true,
+                                child: Text(error!,
+                                    style: TextStyle(
+                                        color: Theme.of(context)
+                                            .colorScheme
+                                            .error))),
+                          ],
+                          const SizedBox(height: 20),
+                          BmPrimaryButton(
+                              label: t.continueText,
+                              loading: loading,
+                              onPressed: loading ? null : _login),
+                        ],
+                      ))),
             ),
           ),
         ),

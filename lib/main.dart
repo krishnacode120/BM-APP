@@ -15,10 +15,12 @@ Future<void> main() async {
       // Android/iOS read the ignored native Firebase configuration files.
       await Firebase.initializeApp();
     }
-  } catch (_) {
-    // Local UI development remains available before Firebase platform files exist.
-    // On web, firebase_core_web throws an AssertionError (not FirebaseException)
-    // when FirebaseOptions are not provided, so we catch all exceptions.
+  } catch (error) {
+    // Log only the error type/code: native messages may include client config.
+    // Preview remains available, while auth correctly reports unavailability.
+    final code = error is FirebaseException ? error.code : error.runtimeType;
+    debugPrint(
+        'BM Firebase initialization failed ($code). Check platform setup.');
   }
   runApp(const BmApp());
 }

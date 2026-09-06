@@ -1,0 +1,46 @@
+name: iOS unsigned build
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  ios:
+    runs-on: macos-26
+    timeout-minutes: 45
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          persist-credentials: false
+      - uses: subosito/flutter-action@1a449444c387b1966244ae4d4f8c696479add0b2 # v2
+        with:
+          flutter-version: '3.47.2'
+          channel: stable
+          cache: true
+      - name: Restore development Firebase configuration
+        env:
+          BM_IOS_PLIST: ${{ secrets.BM_FIREBASE_IOS_PLIST_BASE64 }}
+        run: |
+          test -n "$BM_IOS_PLIST" || { echo 'Missing BM_FIREBASE_IOS_PLIST_BASE64 Actions secret'; exit 1; }
+          printf '%s' "$BM_IOS_PLIST" | base64 --decode > ios/Runner/GoogleService-Info.plist
+          plutil -lint ios/Runner/GoogleService-Info.plist ios/Runner/Info.plist ios/Runner/Runner.entitlements
+          test "$(/usr/libexec/PlistBuddy -c 'Print :PROJECT_ID' ios/Runner/GoogleService-Info.plist)" = 'bm-app-74ddb'
+          test "$(/usr/libexec/PlistBuddy -c 'Print :BUNDLE_ID' ios/Runner/GoogleService-Info.plist)" = 'com.example.bm'
+      - name: Verify Dart application
+        run: |
+          flutter --version
+          flutter pub get
+          flutter analyze
+          flutter test
+      - name: Compile unsigned iOS device application
+        run: flutter build ios --release --no-codesign --dart-define=BM_ENV=development
+      - name: Package unsigned app
+        run: ditto -c -k --sequesterRsrc --keepParent build/ios/iphoneos/Runner.app build/BM-ios-unsigned.zip
+      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: BM-ios-unsigned
+          path: build/BM-ios-unsigned.zip
+          if-no-files-found: error
+          retention-days: 7

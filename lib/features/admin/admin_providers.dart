@@ -13,6 +13,29 @@ import '../../models/order.dart';
 import '../../models/product.dart';
 import '../../repositories/admin_repository.dart';
 import '../../repositories/product_media_repository.dart';
+import '../auth/auth_providers.dart';
+
+typedef AdminSignIn = Future<void> Function({
+  required String email,
+  required String password,
+});
+
+final adminSignInProvider = Provider<AdminSignIn>((ref) => ({
+      required String email,
+      required String password,
+    }) async {
+      if (Firebase.apps.isEmpty) {
+        throw const AdminFailure('firebaseUnavailable');
+      }
+      try {
+        await FirebaseAuth.instance.signInWithEmailAndPassword(
+          email: email,
+          password: password,
+        );
+      } on FirebaseException catch (error) {
+        throw AdminFailure(error.code);
+      }
+    });
 
 final adminRepositoryProvider = Provider<AdminRepository>((ref) =>
     Firebase.apps.isEmpty
@@ -25,27 +48,51 @@ final productMediaRepositoryProvider = Provider<ProductMediaRepository>((ref) =>
         ? const UnavailableProductMediaRepository()
         : FirebaseProductMediaRepository(FirebaseStorage.instance));
 
-final adminAccessProvider = FutureProvider<bool>(
-    (ref) => ref.watch(adminRepositoryProvider).isCurrentUserAdmin());
-final adminDashboardProvider = FutureProvider<AdminDashboard>(
-    (ref) => ref.watch(adminRepositoryProvider).dashboard());
+final adminAccessProvider = FutureProvider<bool>((ref) async {
+  final repository = ref.watch(adminRepositoryProvider);
+  final user = await ref.watch(firebaseAuthStateProvider.future);
+  if (user == null) return false;
+  return repository.isCurrentUserAdmin();
+});
+
+// Access is rechecked whenever the Firebase account changes. Admin data also
+// depends on this result so cached records cannot survive a session change.
+final authorizedAdminRepositoryProvider =
+    FutureProvider<AdminRepository>((ref) async {
+  final repository = ref.watch(adminRepositoryProvider);
+  if (!await ref.watch(adminAccessProvider.future)) {
+    throw const AdminFailure('permission-denied');
+  }
+  return repository;
+});
+
+final adminDashboardProvider = FutureProvider<AdminDashboard>((ref) async =>
+    (await ref.watch(authorizedAdminRepositoryProvider.future)).dashboard());
 final adminOrdersProvider = FutureProvider.family<List<BmOrder>, String?>(
-    (ref, status) => ref.watch(adminRepositoryProvider).orders(status: status));
-final adminOrderProvider = FutureProvider.family<BmOrder?, String>(
-    (ref, id) => ref.watch(adminRepositoryProvider).orderById(id));
-final adminUsersProvider = FutureProvider<List<AdminUserSummary>>(
-    (ref) => ref.watch(adminRepositoryProvider).users());
+    (ref, status) async =>
+        (await ref.watch(authorizedAdminRepositoryProvider.future))
+            .orders(status: status));
+final adminOrderProvider = FutureProvider.family<BmOrder?, String>((ref,
+        id) async =>
+    (await ref.watch(authorizedAdminRepositoryProvider.future)).orderById(id));
+final adminUsersProvider = FutureProvider<List<AdminUserSummary>>((ref) async =>
+    (await ref.watch(authorizedAdminRepositoryProvider.future)).users());
 final adminUserOrdersProvider = FutureProvider.family<List<BmOrder>, String>(
-    (ref, id) => ref.watch(adminRepositoryProvider).ordersForUser(id));
-final adminCategoriesProvider = FutureProvider<List<Category>>(
-    (ref) => ref.watch(adminRepositoryProvider).categories());
-final adminProductsProvider = FutureProvider<List<Product>>(
-    (ref) => ref.watch(adminRepositoryProvider).products());
+    (ref, id) async =>
+        (await ref.watch(authorizedAdminRepositoryProvider.future))
+            .ordersForUser(id));
+final adminCategoriesProvider = FutureProvider<List<Category>>((ref) async =>
+    (await ref.watch(authorizedAdminRepositoryProvider.future)).categories());
+final adminProductsProvider = FutureProvider<List<Product>>((ref) async =>
+    (await ref.watch(authorizedAdminRepositoryProvider.future)).products());
 final adminLocationsProvider = FutureProvider<List<DeliveryLocation>>(
-    (ref) => ref.watch(adminRepositoryProvider).locations());
+    (ref) async => (await ref.watch(authorizedAdminRepositoryProvider.future))
+        .locations());
 final adminBusinessSettingsProvider = FutureProvider<BusinessSettings>(
-    (ref) => ref.watch(adminRepositoryProvider).businessSettings());
-final adminAuditLogsProvider = FutureProvider<List<AuditLog>>(
-    (ref) => ref.watch(adminRepositoryProvider).auditLogs());
+    (ref) async => (await ref.watch(authorizedAdminRepositoryProvider.future))
+        .businessSettings());
+final adminAuditLogsProvider = FutureProvider<List<AuditLog>>((ref) async =>
+    (await ref.watch(authorizedAdminRepositoryProvider.future)).auditLogs());
 final adminReportingProvider = FutureProvider<AdminReportingSummary>(
-    (ref) => ref.watch(adminRepositoryProvider).reporting());
+    (ref) async => (await ref.watch(authorizedAdminRepositoryProvider.future))
+        .reporting());

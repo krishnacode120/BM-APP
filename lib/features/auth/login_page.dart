@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -7,7 +9,6 @@ import '../../core/theme/bm_theme.dart';
 import '../../core/widgets/bm_components.dart';
 import '../../l10n/app_localizations.dart';
 import '../../repositories/customer_repository.dart';
-import '../../services/auth_service.dart';
 import 'auth_providers.dart';
 import 'otp_page.dart';
 
@@ -194,23 +195,14 @@ class _CustomerAccessFormState extends ConsumerState<_CustomerAccessForm> {
           return;
         }
       }
-      await ref.read(authServiceProvider).requestOtp(
-            phoneNumber: normalizedPhone,
-            onCodeSent: (verificationId) {
-              if (!mounted) return;
-              context.push(
-                '/otp',
-                extra: OtpArguments(
-                  phone: normalizedPhone,
-                  verificationId: verificationId,
-                  fullName: normalizedName,
-                  createAccount: widget.signUp,
-                ),
-              );
-            },
-          );
-    } on AuthFailure catch (error) {
-      if (mounted) setState(() => errorCode = error.code);
+      if (!mounted) return;
+      // The OTP route owns the request, callbacks, resend and cancellation.
+      unawaited(context.push('/otp',
+          extra: OtpArguments(
+            phone: normalizedPhone,
+            fullName: normalizedName,
+            createAccount: widget.signUp,
+          )));
     } on CustomerFailure catch (error) {
       if (mounted) setState(() => errorCode = error.code);
     } catch (_) {

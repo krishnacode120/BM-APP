@@ -101,6 +101,8 @@ class FirestorePricingRepository implements PricingRepository {
             .collection('productPrices')
             .where('productId', isEqualTo: productId)
             .where('locationId', isEqualTo: locationId)
+            .where('effectiveFrom',
+                isLessThanOrEqualTo: Timestamp.fromDate(now))
             .orderBy('effectiveFrom', descending: true)
             .limit(5)
             .get())

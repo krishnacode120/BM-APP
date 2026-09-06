@@ -11,11 +11,21 @@ final authServiceProvider = Provider<AuthService>((_) => Firebase.apps.isEmpty
     ? const UnavailableAuthService()
     : FirebasePhoneAuthService(FirebaseAuth.instance));
 
+// Auth-state changes (not token refreshes) invalidate account-specific caches.
+final firebaseAuthStateProvider = StreamProvider<User?>((ref) =>
+    Firebase.apps.isEmpty
+        ? Stream<User?>.value(null)
+        : FirebaseAuth.instance.authStateChanges());
+
 final customerRepositoryProvider = Provider<CustomerRepository>((_) =>
     Firebase.apps.isEmpty
         ? const UnavailableCustomerRepository()
         : FirebaseCustomerRepository(
             FirebaseFirestore.instance, FirebaseAuth.instance));
 
-final currentCustomerProvider = FutureProvider<CustomerProfile?>(
-    (ref) => ref.watch(customerRepositoryProvider).currentProfile());
+final currentCustomerProvider = FutureProvider<CustomerProfile?>((ref) async {
+  final repository = ref.watch(customerRepositoryProvider);
+  final user = await ref.watch(firebaseAuthStateProvider.future);
+  if (user == null) return null;
+  return repository.currentProfile();
+});

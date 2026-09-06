@@ -11,6 +11,7 @@ import '../../models/order.dart';
 import '../../repositories/order_repository.dart';
 import '../cart/cart_notifier.dart';
 import '../catalog/catalog_providers.dart';
+import '../auth/auth_providers.dart';
 
 final orderRepositoryProvider = Provider<OrderRepository>((ref) =>
     Firebase.apps.isEmpty
@@ -18,11 +19,17 @@ final orderRepositoryProvider = Provider<OrderRepository>((ref) =>
         : FirebaseOrderRepository(FirebaseFirestore.instance,
             FirebaseFunctions.instance, FirebaseAuth.instance));
 
-final ordersProvider = FutureProvider<List<BmOrder>>(
-    (ref) => ref.watch(orderRepositoryProvider).getUserOrders());
+final ordersProvider = FutureProvider<List<BmOrder>>((ref) async {
+  final repository = ref.watch(orderRepositoryProvider);
+  if (await ref.watch(firebaseAuthStateProvider.future) == null) return [];
+  return repository.getUserOrders();
+});
 
-final orderProvider = FutureProvider.family<BmOrder?, String>(
-    (ref, id) => ref.watch(orderRepositoryProvider).getOrderById(id));
+final orderProvider = FutureProvider.family<BmOrder?, String>((ref, id) async {
+  final repository = ref.watch(orderRepositoryProvider);
+  if (await ref.watch(firebaseAuthStateProvider.future) == null) return null;
+  return repository.getOrderById(id);
+});
 
 final checkoutProvider =
     NotifierProvider<CheckoutNotifier, CheckoutState>(CheckoutNotifier.new);
@@ -70,8 +77,15 @@ class CheckoutState {
 }
 
 class CheckoutNotifier extends Notifier<CheckoutState> {
+  int _session = 0;
   @override
-  CheckoutState build() => const CheckoutState();
+  CheckoutState build() {
+    ref.watch(
+        firebaseAuthStateProvider.select((value) => value.valueOrNull?.uid));
+    _session++;
+    ref.onDispose(() => _session++);
+    return const CheckoutState();
+  }
 
   void updateCustomerName(String value) =>
       state = state.copyWith(customerName: value, clearError: true);
@@ -83,6 +97,7 @@ class CheckoutNotifier extends Notifier<CheckoutState> {
       state = state.copyWith(customerNote: value, clearError: true);
 
   Future<BmOrder?> submit(CartState cart) async {
+    final session = _session;
     if (state.isSubmitting) return null;
     final location = ref.read(selectedLocationProvider).valueOrNull;
     if (location == null) {
@@ -97,10 +112,19 @@ class CheckoutNotifier extends Notifier<CheckoutState> {
       state = state.copyWith(errorCode: 'invalidCart');
       return null;
     }
-    await ref.read(cartProvider.notifier).revalidate(location.id);
+    state = state.copyWith(isSubmitting: true, clearError: true);
+    try {
+      await ref.read(cartProvider.notifier).revalidate(location.id);
+    } catch (_) {
+      if (session == _session) {
+        state = state.copyWith(isSubmitting: false, errorCode: 'invalidCart');
+      }
+      return null;
+    }
+    if (session != _session) return null;
     final latestCart = ref.read(cartProvider);
     if (!latestCart.canCheckout) {
-      state = state.copyWith(errorCode: 'invalidCart');
+      state = state.copyWith(isSubmitting: false, errorCode: 'invalidCart');
       return null;
     }
     final key = state.idempotencyKey ?? _newIdempotencyKey();
@@ -122,12 +146,19 @@ class CheckoutNotifier extends Notifier<CheckoutState> {
     try {
       final order =
           await ref.read(orderRepositoryProvider).createOrder(request);
+      if (session != _session) return null;
       ref.read(cartProvider.notifier).clear();
       ref.invalidate(ordersProvider);
       state = const CheckoutState();
       return order;
     } on OrderFailure catch (error) {
+      if (session != _session) return null;
       state = state.copyWith(isSubmitting: false, errorCode: error.code);
+      return null;
+    } catch (_) {
+      if (session == _session) {
+        state = state.copyWith(isSubmitting: false, errorCode: 'unknown');
+      }
       return null;
     }
   }

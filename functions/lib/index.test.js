@@ -1,6 +1,7 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
 const index_1 = require("./index");
+const admin = require("firebase-admin");
 function assert(value, message) {
     if (!value)
         throw new Error(message);
@@ -28,4 +29,36 @@ const reportRows = [{
 assert(index_1.testHooks.ordersCsv(reportRows).includes("தமிழ் வாடிக்கையாளர்"), "CSV preserves Unicode customer data");
 assert(index_1.testHooks.revenueCsv([...reportRows, { ...reportRows[0], id: "cancelled", orderStatus: "cancelled" }])
     .split("\n").length === 2, "revenue CSV excludes cancelled orders");
+for (const value of ["=1+1", "+SUM(1,2)", "-1+1", "@SUM(1)", "  =1", "\tvalue", "\rvalue"]) {
+    const output = index_1.testHooks.customersCsv([{ id: "customer", name: value }]);
+    assert(output.includes(`"'${value.replace(/"/g, '""')}"`), "CSV formula-like text must be exported as literal text");
+}
+assert(index_1.testHooks.productsCsv([{ id: "p", name: 'Brick, "A"', stockQuantity: -2 }])
+    .includes('"Brick, ""A"""'), "CSV still escapes commas and quotes");
+assert(index_1.testHooks.productsCsv([{ id: "p", stockQuantity: -2 }]).includes('"-2"'), "numeric cells remain numeric");
+async function testCurrentPrice() {
+    const now = admin.firestore.Timestamp.fromMillis(100000);
+    const db = admin.firestore();
+    const expectedQuery = db.collection("productPrices")
+        .where("productId", "==", "product").where("locationId", "==", "location")
+        .where("effectiveFrom", "<=", now).orderBy("effectiveFrom", "desc").limit(5);
+    let rows = [];
+    const transaction = {
+        get: async (query) => {
+            assert(query.isEqual(expectedQuery), "current price filters future prices before limit");
+            return { docs: rows.map((data) => ({ data: () => data })) };
+        },
+    };
+    const read = () => index_1.testHooks.currentPrice(transaction, "product", "location", now);
+    assert(await read() === null, "missing price is not zero");
+    rows = [{ price: 8.5, effectiveFrom: now }];
+    assert(await read() === 8.5, "price includes effectiveFrom boundary");
+    rows = [{ price: 9, effectiveTo: now }, { price: 8, effectiveFrom: now }];
+    assert(await read() === 8, "effectiveTo boundary is exclusive");
+    for (const price of [-1, NaN, Infinity, "8", undefined]) {
+        rows = [{ price, effectiveFrom: now }];
+        assert(await read() === null, "malformed price is rejected");
+    }
+}
+void testCurrentPrice().catch((error) => { console.error(error); process.exitCode = 1; });
 //# sourceMappingURL=index.test.js.map

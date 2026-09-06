@@ -1,8 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
 
-import 'package:firebase_auth/firebase_auth.dart';
-import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../../models/cart.dart';
@@ -10,6 +8,7 @@ import '../../models/location.dart';
 import '../../models/product.dart';
 import '../../services/cart_pricing_service.dart';
 import '../catalog/catalog_providers.dart';
+import '../auth/auth_providers.dart';
 
 final cartPricingServiceProvider = Provider<CartPricingService>((ref) =>
     CartPricingService(ref.watch(productRepositoryProvider),
@@ -18,8 +17,14 @@ final cartProvider =
     NotifierProvider<CartNotifier, CartState>(CartNotifier.new);
 
 class CartNotifier extends Notifier<CartState> {
+  int _revision = 0;
+  String _key = 'cart_guest';
   @override
   CartState build() {
+    final uid = ref.watch(firebaseAuthStateProvider).valueOrNull?.uid;
+    _key = 'cart_${uid ?? 'guest'}';
+    final revision = ++_revision;
+    ref.onDispose(() => _revision++);
     ref.listen<AsyncValue<DeliveryLocation?>>(selectedLocationProvider,
         (previous, next) {
       final previousId = previous?.valueOrNull?.id;
@@ -31,7 +36,7 @@ class CartNotifier extends Notifier<CartState> {
         unawaited(revalidate(nextId));
       }
     });
-    unawaited(_load());
+    unawaited(_load(_key, revision));
     return const CartState();
   }
 
@@ -86,9 +91,11 @@ class CartNotifier extends Notifier<CartState> {
   void acknowledgePriceChanges() =>
       _setState(state.copyWith(priceChangeAcknowledged: true));
   Future<void> revalidate(String locationId) async {
+    final revision = ++_revision;
     final service = ref.read(cartPricingServiceProvider);
     final items = await Future.wait(
         state.items.map((i) => service.revalidate(i, locationId)));
+    if (revision != _revision) return;
     _setState(CartState(
         items: items,
         priceChangeAcknowledged:
@@ -96,32 +103,34 @@ class CartNotifier extends Notifier<CartState> {
   }
 
   void _setState(CartState value) {
+    _revision++;
     state = value;
-    unawaited(_save(value));
+    unawaited(_save(value, _key));
   }
 
-  Future<void> _load() async {
+  Future<void> _load(String key, int revision) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      if (revision != _revision) return;
+      final encoded = prefs.getString(key);
+      if (encoded == null) return;
+      final decoded = jsonDecode(encoded);
+      if (decoded is! List<dynamic>) return;
+      state = CartState(
+          items: decoded
+              .whereType<Map<String, dynamic>>()
+              .map(CartItem.fromJson)
+              .toList());
+    } on FormatException {
+      // Corrupt local cache must not crash login or replace another account.
+    } on TypeError {
+      // Older or malformed local records can be discarded safely.
+    }
+  }
+
+  Future<void> _save(CartState value, String key) async {
     final prefs = await SharedPreferences.getInstance();
-    final encoded = prefs.getString(_storageKey());
-    if (encoded == null) return;
-    final decoded = jsonDecode(encoded);
-    if (decoded is! List<dynamic>) return;
-    state = CartState(
-        items: decoded
-            .whereType<Map<String, dynamic>>()
-            .map(CartItem.fromJson)
-            .toList());
-  }
-
-  Future<void> _save(CartState value) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(_storageKey(),
-        jsonEncode(value.items.map((item) => item.toJson()).toList()));
-  }
-
-  String _storageKey() {
-    if (Firebase.apps.isEmpty) return 'cart_guest';
-    final userId = FirebaseAuth.instance.currentUser?.uid;
-    return 'cart_${userId ?? 'guest'}';
+    await prefs.setString(
+        key, jsonEncode(value.items.map((item) => item.toJson()).toList()));
   }
 }
