@@ -36,12 +36,31 @@ Stages D–H remain gated. Branch: feature/supabase-migration from c24fe5d.
 | RLS inspection | Enabled on all six created tables |
 | Android Supabase debug build | Passed, 128.4-second Gradle build |
 | iOS workflow YAML | Parsed; Firebase/Supabase choice validated |
-| iOS Supabase device build | Pending GitHub macOS run at this commit |
+| iOS Supabase device build | Passed on GitHub macos-26 at a4d87a8 |
+| Downloaded iOS artifact | Checksum verified; real ARM64 Mach-O Runner, Info.plist and development Supabase host present |
 
 The managed catalog is intentionally empty: approval covered foundation schema,
 not a data import/seed. No customer PII, Firebase users/orders or admin credentials
 were copied. The local Auth harness verifies SQL behavior but is not GoTrue.
 SDK HTTP fixtures are tests, never app fallback behavior.
+
+## Build downloads and provenance
+
+Application source: a4d87a88b2209ea6b9c501cad5fd2688f39b5681.
+[Successful iOS run](https://github.com/krishnacode120/BM-APP/actions/runs/34346695944),
+artifact 10102171860 (BM-ios-supabase-unsigned). GitHub retention expires
+2026-09-16; local copies remain in build/releases.
+
+- Android: build/releases/BM-supabase-foundation-debug.apk, 188,102,170 bytes.
+  SHA256 D215027456D515ECDACF3D86F96FD6A4349F26F383D1F0B1268DCACC16F1BCC9.
+- iOS: build/releases/BM-supabase-foundation-ios-unsigned.zip, 17,151,473 bytes.
+  SHA256 42E63A7866AC3B45BCCF5D09837FB148CE718FCCC79BF0F5AFFB3DD91A07A063.
+- Outer GitHub artifact checksum matched its API digest:
+  0fad8571e1060c42e89967d48c47ebf4838fb0d78dfc57a4453a208bf8c48a66.
+
+The iOS ZIP contains Runner.app with an ARM64 executable, not an APK. It is
+unsigned and cannot be installed directly on an iPhone. A signed IPA/TestFlight
+release needs Apple signing/provisioning and actual device verification.
 
 ## Advisories and limitations
 
