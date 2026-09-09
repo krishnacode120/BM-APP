@@ -1,0 +1,6 @@
+{
+  "BM_ENV": "development",
+  "BM_BACKEND": "supabase",
+  "BM_SUPABASE_URL": "https://YOUR_PROJECT_REF.supabase.co",
+  "BM_SUPABASE_PUBLISHABLE_KEY": "sb_publishable_REPLACE_ME"
+}

@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../core/theme/bm_theme.dart';
+import '../../core/config/backend_config.dart';
 import '../../core/widgets/bm_components.dart';
 import '../../l10n/app_localizations.dart';
 import '../../models/category.dart';
@@ -36,6 +37,13 @@ class HomeShell extends ConsumerWidget {
           },
           child: CustomScrollView(
             slivers: <Widget>[
+              if (ref.watch(backendConfigProvider).isSupabase)
+                SliverToBoxAdapter(
+                    child: Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: Semantics(
+                      liveRegion: true, child: Text(t.migrationFoundation)),
+                )),
               SliverToBoxAdapter(
                 child: Padding(
                   padding: const EdgeInsets.fromLTRB(20, 12, 20, 0),

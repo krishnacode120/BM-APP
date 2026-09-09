@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 import '../../l10n/app_localizations.dart';
+import '../../core/config/backend_config.dart';
 import 'auth_providers.dart';
 import 'otp_controller.dart';
 export 'otp_controller.dart' show OtpArguments;
@@ -41,8 +42,9 @@ class _OtpPageState extends ConsumerState<OtpPage> {
 
   void _startCountdown() {
     _resendTimer?.cancel();
-    final deadline = DateTime.now().add(const Duration(seconds: 30));
-    setState(() => _resendSeconds = 30);
+    final seconds = ref.read(backendConfigProvider).isSupabase ? 60 : 30;
+    final deadline = DateTime.now().add(Duration(seconds: seconds));
+    setState(() => _resendSeconds = seconds);
     _resendTimer = Timer.periodic(const Duration(seconds: 1), (timer) {
       if (!mounted) {
         timer.cancel();

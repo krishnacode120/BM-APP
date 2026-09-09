@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
 import '../models/customer_profile.dart';
+import '../models/auth_identity.dart';
 
 class CustomerFailure implements Exception {
   const CustomerFailure(this.code);
@@ -50,7 +51,7 @@ abstract interface class CustomerRepository {
     required String phoneNumber,
   });
   Future<CustomerProfile> saveVerifiedCustomer({
-    required User user,
+    required AuthIdentity user,
     required String name,
     required String phoneNumber,
   });
@@ -117,7 +118,7 @@ class FirebaseCustomerRepository implements CustomerRepository {
 
   @override
   Future<CustomerProfile> saveVerifiedCustomer({
-    required User user,
+    required AuthIdentity user,
     required String name,
     required String phoneNumber,
   }) async {
@@ -174,7 +175,7 @@ class UnavailableCustomerRepository implements CustomerRepository {
       null;
   @override
   Future<CustomerProfile> saveVerifiedCustomer(
-          {required User user,
+          {required AuthIdentity user,
           required String name,
           required String phoneNumber}) =>
       throw const CustomerFailure('firebaseUnavailable');

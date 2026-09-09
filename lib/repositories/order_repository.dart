@@ -63,13 +63,15 @@ class FirebaseOrderRepository implements OrderRepository {
 }
 
 class UnavailableOrderRepository implements OrderRepository {
-  const UnavailableOrderRepository();
+  const UnavailableOrderRepository({this.code = 'firebaseUnavailable'});
+  final String code;
   @override
   Future<BmOrder> createOrder(CreateOrderRequest request) =>
-      throw const OrderFailure('firebaseUnavailable');
+      throw OrderFailure(code);
   @override
-  Future<BmOrder?> getOrderById(String id) async => null;
+  Future<BmOrder?> getOrderById(String id) async =>
+      code == 'migrationPending' ? throw OrderFailure(code) : null;
   @override
   Future<List<BmOrder>> getUserOrders({int limit = 20}) async =>
-      const <BmOrder>[];
+      code == 'migrationPending' ? throw OrderFailure(code) : const <BmOrder>[];
 }

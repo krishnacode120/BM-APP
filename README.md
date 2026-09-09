@@ -1,5 +1,21 @@
 # BM — Building Materials Marketplace
 
+## Supabase migration status — development foundation only
+
+Work is isolated on feature/supabase-migration. Stage A audit/design and Stage B
+SQL/RLS, phone-OTP adapter and read-only catalog proof of concept passed local
+tests and development API checks. Firebase remains the default rollback backend; no cloud data was
+deleted or copied. Supabase builds deliberately disable unmigrated order/admin,
+contact-settings, media-upload and legacy push operations. This is NOT a full
+migration or production release. Phone login requires a configured SMS provider.
+
+Start with [migration plan](docs/supabase-migration-plan.md),
+[development setup](docs/supabase-setup.md), [database](docs/supabase-database.md),
+[security](docs/supabase-security.md), and [authentication](docs/supabase-auth.md).
+Exact results and remaining gates are in [verification](docs/supabase-verification.md).
+The milestone descriptions below describe the retained Firebase implementation,
+not completed Supabase functionality.
+
 BM is a bilingual Flutter application for customers to request construction materials and for BM administrators to manage the resulting operations. Customers use name-and-phone OTP authentication, browse location-priced materials, build an order request, submit it for manual verification, and call BM. There is no online payment flow.
 
 The current UI release applies the approved warm-white/peach/orange BM visual system across the customer and admin experiences. It includes original BM SVG branding, a locally bundled construction-material hero, persisted language and onboarding choices, responsive catalog/search/detail/order flows, a minimal customer profile, and a responsive operational admin application. Trusted Firebase repositories and callable order/admin operations remain the data authority; clearly marked development preview content is used only when Firebase is not configured and cannot create fake orders.

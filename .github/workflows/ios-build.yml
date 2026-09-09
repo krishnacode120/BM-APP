@@ -2,6 +2,15 @@ name: iOS unsigned build
 
 on:
   workflow_dispatch:
+    inputs:
+      backend:
+        description: Development backend to compile
+        required: true
+        default: firebase
+        type: choice
+        options:
+          - firebase
+          - supabase
 
 permissions:
   contents: read
@@ -34,13 +43,37 @@ jobs:
           flutter pub get
           flutter analyze
           flutter test
+      - name: Prepare Supabase public-client configuration
+        if: inputs.backend == 'supabase'
+        env:
+          BM_SUPABASE_CONFIG: ${{ secrets.BM_SUPABASE_CONFIG_JSON }}
+        run: |
+          python3 - <<'PY'
+          import json, os, pathlib, urllib.parse
+          data = json.loads(os.environ['BM_SUPABASE_CONFIG'])
+          assert data['BM_BACKEND'] == 'supabase'
+          assert data['BM_ENV'] == 'development'
+          url = urllib.parse.urlparse(data['BM_SUPABASE_URL'])
+          assert url.scheme == 'https' and url.hostname == 'eqnhxpqaytyskfmvnrmo.supabase.co'
+          assert data['BM_SUPABASE_PUBLISHABLE_KEY'].startswith('sb_publishable_')
+          allowed = {'BM_BACKEND', 'BM_ENV', 'BM_SUPABASE_URL', 'BM_SUPABASE_PUBLISHABLE_KEY'}
+          assert set(data) == allowed
+          pathlib.Path(os.environ['RUNNER_TEMP'], 'bm-supabase.json').write_text(json.dumps(data))
+          PY
       - name: Compile unsigned iOS device application
-        run: flutter build ios --release --no-codesign --dart-define=BM_ENV=development
+        env:
+          BM_BACKEND: ${{ inputs.backend }}
+        run: |
+          if [ "$BM_BACKEND" = 'supabase' ]; then
+            flutter build ios --release --no-codesign --dart-define-from-file="$RUNNER_TEMP/bm-supabase.json"
+          else
+            flutter build ios --release --no-codesign --dart-define=BM_ENV=development
+          fi
       - name: Package unsigned app
         run: ditto -c -k --sequesterRsrc --keepParent build/ios/iphoneos/Runner.app build/BM-ios-unsigned.zip
       - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
         with:
-          name: BM-ios-unsigned
+          name: BM-ios-${{ inputs.backend }}-unsigned
           path: build/BM-ios-unsigned.zip
           if-no-files-found: error
           retention-days: 7

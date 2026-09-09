@@ -1,6 +1,6 @@
 import 'dart:async';
 
-import 'package:firebase_auth/firebase_auth.dart';
+import '../../models/auth_identity.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../repositories/customer_repository.dart';
@@ -103,7 +103,7 @@ class OtpController extends StateNotifier<OtpState> {
     }
   }
 
-  Future<void> _complete(UserCredential credential, int generation) async {
+  Future<void> _complete(AuthSessionResult credential, int generation) async {
     if (!mounted || generation != _generation || state.completed) return;
     final id = state.verificationId;
     state = OtpState(verificationId: id, verifying: true);

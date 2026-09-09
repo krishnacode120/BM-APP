@@ -5,6 +5,7 @@ import 'package:bm/features/auth/otp_controller.dart';
 import 'package:bm/features/auth/otp_page.dart';
 import 'package:bm/l10n/app_localizations.dart';
 import 'package:bm/models/customer_profile.dart';
+import 'package:bm/models/auth_identity.dart';
 import 'package:bm/repositories/customer_repository.dart';
 import 'package:bm/services/auth_service.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -34,7 +35,7 @@ class TestCustomers extends Fake implements CustomerRepository {
   Object? failure;
   @override
   Future<CustomerProfile> saveVerifiedCustomer(
-      {required User user,
+      {required AuthIdentity user,
       required String name,
       required String phoneNumber}) async {
     saves++;
@@ -54,7 +55,8 @@ class TestAuth extends Fake implements AuthService {
   final requests = <StreamController<PhoneVerificationEvent>>[];
   bool? resent;
   int verifications = 0;
-  UserCredential credential = TestCredential(TestUser());
+  AuthSessionResult credential = const AuthSessionResult(
+      AuthIdentity(uid: 'customer-test', phoneNumber: '+919876543210'));
   Object? failure;
   @override
   Stream<PhoneVerificationEvent> requestOtp(
@@ -66,7 +68,7 @@ class TestAuth extends Fake implements AuthService {
   }
 
   @override
-  Future<UserCredential> verifyOtp(
+  Future<AuthSessionResult> verifyOtp(
       {required String verificationId, required String smsCode}) async {
     verifications++;
     if (failure != null) throw failure!;
@@ -137,7 +139,7 @@ void main() {
 
     test('null user never reports success', () async {
       await controller.request();
-      auth.requests.last.add(PhoneVerified(TestCredential(null)));
+      auth.requests.last.add(const PhoneVerified(AuthSessionResult(null)));
       await flush();
       expect(customers.saves, 0);
       expect(controller.state.completed, isFalse);

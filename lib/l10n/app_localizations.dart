@@ -347,6 +347,7 @@ class AppLocalizations {
   String get paymentStatusLabel =>
       isTamil ? 'பணம் செலுத்தும் நிலை' : 'Payment status';
   String adminError(String code) => switch (code) {
+        'migrationPending' => migrationFoundation,
         'invalid-image' => isTamil
             ? '5 MB-க்கு குறைவான சரியான படத்தைத் தேர்ந்தெடுக்கவும்.'
             : 'Choose a valid image smaller than 5 MB.',
@@ -365,6 +366,7 @@ class AppLocalizations {
       ? 'நிர்வாக அணுகலைச் சரிபார்க்க முடியவில்லை. மீண்டும் முயற்சிக்கவும்.'
       : 'Unable to check admin access. Please try again.';
   String adminLoginError(String code) => switch (code) {
+        'migrationPending' => migrationFoundation,
         'firebaseUnavailable' => firebaseUnavailable,
         'invalid-email' => isTamil
             ? 'சரியான மின்னஞ்சல் முகவரியை உள்ளிடவும்.'
@@ -597,14 +599,17 @@ class AppLocalizations {
       ? 'அறிவிப்புகள் மறுக்கப்பட்டுள்ளன. சாதன அமைப்புகளில் அவற்றை இயக்கலாம்.'
       : 'Notifications are disabled. You can enable them in device settings.';
   String get notificationsUnavailable => isTamil
-      ? 'Firebase அமைக்கப்பட்ட பிறகு அறிவிப்புகள் கிடைக்கும்.'
-      : 'Notifications are available after Firebase is configured.';
+      ? 'இந்தப் பதிப்பில் அறிவிப்புச் சேவை இன்னும் தயாராகவில்லை.'
+      : 'The notification service is not ready in this build.';
   String get notificationsNotEnabled => isTamil
       ? 'அறிவிப்புகள் இன்னும் இயக்கப்படவில்லை'
       : 'Notifications are not enabled yet';
   String get firebaseUnavailable => isTamil
       ? 'இந்தப் பதிப்பில் சேவையுடன் இணைக்க முடியவில்லை. BM-ஐத் தொடர்புகொள்ளவும்.'
       : 'This app version cannot connect to the service. Please contact BM.';
+  String get migrationFoundation => isTamil
+      ? 'இது சோதனைப் பதிப்பு. ஆர்டர் மற்றும் நிர்வாக வசதிகள் இன்னும் மாற்றப்படவில்லை.'
+      : 'Development foundation: ordering and admin operations are not migrated yet.';
   String get resendOtp =>
       isTamil ? 'குறியீட்டை மீண்டும் அனுப்பவும்' : 'Resend code';
   String resendOtpIn(int seconds) => isTamil
@@ -683,6 +688,7 @@ class AppLocalizations {
         _ => isTamil ? 'செலுத்தப்படவில்லை' : 'Unpaid',
       };
   String orderError(String code) => switch (code) {
+        'migrationPending' => migrationFoundation,
         'unauthenticated' =>
           isTamil ? 'மீண்டும் உள்நுழைக.' : 'Please sign in again.',
         'price-changed' || 'failed-precondition' => isTamil

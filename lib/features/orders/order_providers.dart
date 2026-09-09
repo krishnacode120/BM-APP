@@ -12,22 +12,25 @@ import '../../repositories/order_repository.dart';
 import '../cart/cart_notifier.dart';
 import '../catalog/catalog_providers.dart';
 import '../auth/auth_providers.dart';
+import '../../core/config/backend_config.dart';
 
 final orderRepositoryProvider = Provider<OrderRepository>((ref) =>
-    Firebase.apps.isEmpty
-        ? const UnavailableOrderRepository()
-        : FirebaseOrderRepository(FirebaseFirestore.instance,
-            FirebaseFunctions.instance, FirebaseAuth.instance));
+    ref.watch(backendConfigProvider).isSupabase
+        ? const UnavailableOrderRepository(code: 'migrationPending')
+        : Firebase.apps.isEmpty
+            ? const UnavailableOrderRepository()
+            : FirebaseOrderRepository(FirebaseFirestore.instance,
+                FirebaseFunctions.instance, FirebaseAuth.instance));
 
 final ordersProvider = FutureProvider<List<BmOrder>>((ref) async {
   final repository = ref.watch(orderRepositoryProvider);
-  if (await ref.watch(firebaseAuthStateProvider.future) == null) return [];
+  if (await ref.watch(authStateProvider.future) == null) return [];
   return repository.getUserOrders();
 });
 
 final orderProvider = FutureProvider.family<BmOrder?, String>((ref, id) async {
   final repository = ref.watch(orderRepositoryProvider);
-  if (await ref.watch(firebaseAuthStateProvider.future) == null) return null;
+  if (await ref.watch(authStateProvider.future) == null) return null;
   return repository.getOrderById(id);
 });
 
@@ -80,8 +83,7 @@ class CheckoutNotifier extends Notifier<CheckoutState> {
   int _session = 0;
   @override
   CheckoutState build() {
-    ref.watch(
-        firebaseAuthStateProvider.select((value) => value.valueOrNull?.uid));
+    ref.watch(authStateProvider.select((value) => value.valueOrNull?.uid));
     _session++;
     ref.onDispose(() => _session++);
     return const CheckoutState();

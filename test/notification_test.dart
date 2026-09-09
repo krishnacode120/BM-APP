@@ -50,7 +50,8 @@ void main() {
     await tester.pumpAndSettle();
     expect(find.text('Order updates'), findsOneWidget);
     expect(
-        find.text('Notifications are available after Firebase is configured.'),
+        find.text(
+            AppLocalizations(const Locale('en')).notificationsUnavailable),
         findsOneWidget);
   });
 

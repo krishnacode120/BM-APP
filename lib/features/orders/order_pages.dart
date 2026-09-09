@@ -6,6 +6,7 @@ import 'package:go_router/go_router.dart';
 
 import '../../l10n/app_localizations.dart';
 import '../../models/order.dart';
+import '../../core/config/backend_config.dart';
 import '../../core/widgets/bm_components.dart';
 import '../cart/cart_notifier.dart';
 import '../catalog/catalog_providers.dart';
@@ -43,6 +44,8 @@ class _CheckoutPageState extends ConsumerState<CheckoutPage> {
     return Scaffold(
       appBar: AppBar(title: Text(t.submitOrder)),
       body: ListView(padding: const EdgeInsets.all(16), children: [
+        if (ref.watch(backendConfigProvider).isSupabase)
+          Text(t.migrationFoundation),
         _SectionTitle(t.deliveryLocation),
         ListTile(
           leading: const Icon(Icons.location_on_outlined),
@@ -93,7 +96,8 @@ class _CheckoutPageState extends ConsumerState<CheckoutPage> {
       bottomNavigationBar: SafeArea(
         minimum: const EdgeInsets.all(16),
         child: FilledButton.icon(
-          onPressed: checkout.isSubmitting ||
+          onPressed: ref.watch(backendConfigProvider).isSupabase ||
+                  checkout.isSubmitting ||
                   !checkout.detailsValid ||
                   !cart.canCheckout
               ? null

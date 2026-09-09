@@ -14,6 +14,7 @@ import '../../models/product.dart';
 import '../../repositories/admin_repository.dart';
 import '../../repositories/product_media_repository.dart';
 import '../auth/auth_providers.dart';
+import '../../core/config/backend_config.dart';
 
 typedef AdminSignIn = Future<void> Function({
   required String email,
@@ -24,6 +25,9 @@ final adminSignInProvider = Provider<AdminSignIn>((ref) => ({
       required String email,
       required String password,
     }) async {
+      if (ref.read(backendConfigProvider).isSupabase) {
+        throw const AdminFailure('migrationPending');
+      }
       if (Firebase.apps.isEmpty) {
         throw const AdminFailure('firebaseUnavailable');
       }
@@ -38,19 +42,19 @@ final adminSignInProvider = Provider<AdminSignIn>((ref) => ({
     });
 
 final adminRepositoryProvider = Provider<AdminRepository>((ref) =>
-    Firebase.apps.isEmpty
+    ref.watch(backendConfigProvider).isSupabase || Firebase.apps.isEmpty
         ? const UnavailableAdminRepository()
         : FirebaseAdminRepository(FirebaseFirestore.instance,
             FirebaseFunctions.instance, FirebaseAuth.instance));
 
 final productMediaRepositoryProvider = Provider<ProductMediaRepository>((ref) =>
-    Firebase.apps.isEmpty
+    ref.watch(backendConfigProvider).isSupabase || Firebase.apps.isEmpty
         ? const UnavailableProductMediaRepository()
         : FirebaseProductMediaRepository(FirebaseStorage.instance));
 
 final adminAccessProvider = FutureProvider<bool>((ref) async {
   final repository = ref.watch(adminRepositoryProvider);
-  final user = await ref.watch(firebaseAuthStateProvider.future);
+  final user = await ref.watch(authStateProvider.future);
   if (user == null) return false;
   return repository.isCurrentUserAdmin();
 });

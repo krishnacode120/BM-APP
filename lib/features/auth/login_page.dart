@@ -1,6 +1,7 @@
 import 'dart:async';
 
-import 'package:firebase_core/firebase_core.dart';
+import '../../core/config/backend_config.dart';
+import '../catalog/catalog_providers.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -134,7 +135,8 @@ class _CustomerAccessFormState extends ConsumerState<_CustomerAccessForm> {
                       loading: isSending,
                       onPressed: isSending ? null : _continue,
                     ),
-                    if (!widget.signUp && Firebase.apps.isEmpty) ...<Widget>[
+                    if (!widget.signUp &&
+                        ref.watch(demoCatalogProvider)) ...<Widget>[
                       const SizedBox(height: 14),
                       OutlinedButton.icon(
                         onPressed: () => context.go('/home'),
@@ -152,6 +154,12 @@ class _CustomerAccessFormState extends ConsumerState<_CustomerAccessForm> {
                       ),
                     ],
                     const SizedBox(height: 16),
+                    if (ref.watch(backendConfigProvider).isSupabase) ...[
+                      Text(t.migrationFoundation, textAlign: TextAlign.center),
+                      TextButton(
+                          onPressed: () => context.go('/home'),
+                          child: Text(t.browseMaterials)),
+                    ],
                     TextButton(
                       onPressed: () => widget.signUp
                           ? context.go('/login')

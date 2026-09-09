@@ -1,5 +1,6 @@
 {
   "@@locale": "en",
+  "migrationFoundation": "Development foundation: ordering and admin operations are not migrated yet.",
   "language": "Language",
   "continue": "Continue",
   "getStarted": "Get started",

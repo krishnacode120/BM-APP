@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:firebase_auth/firebase_auth.dart';
+import '../models/auth_identity.dart';
 
 class AuthFailure implements Exception {
   const AuthFailure(this.code);
@@ -18,7 +19,7 @@ class PhoneCodeSentEvent extends PhoneVerificationEvent {
 
 class PhoneVerified extends PhoneVerificationEvent {
   const PhoneVerified(this.credential);
-  final UserCredential credential;
+  final AuthSessionResult credential;
 }
 
 abstract interface class AuthService {
@@ -26,7 +27,7 @@ abstract interface class AuthService {
     required String phoneNumber,
     bool forceResend = false,
   });
-  Future<UserCredential> verifyOtp(
+  Future<AuthSessionResult> verifyOtp(
       {required String verificationId, required String smsCode});
 }
 
@@ -89,7 +90,9 @@ class FirebasePhoneAuthService implements AuthService {
                 fail(const AuthFailure('invalidOtp'));
                 return;
               }
-              controller.add(PhoneVerified(result));
+              controller.add(PhoneVerified(AuthSessionResult(AuthIdentity(
+                  uid: result.user!.uid,
+                  phoneNumber: result.user!.phoneNumber))));
               close();
             } catch (error) {
               fail(error);
@@ -128,7 +131,7 @@ class FirebasePhoneAuthService implements AuthService {
   }
 
   @override
-  Future<UserCredential> verifyOtp(
+  Future<AuthSessionResult> verifyOtp(
       {required String verificationId, required String smsCode}) async {
     if (verificationId.isEmpty || !RegExp(r'^\d{6}$').hasMatch(smsCode)) {
       throw const AuthFailure('invalidOtp');
@@ -138,7 +141,8 @@ class FirebasePhoneAuthService implements AuthService {
           verificationId: verificationId, smsCode: smsCode);
       final result = await _auth.signInWithCredential(credential);
       if (result.user == null) throw const AuthFailure('invalidOtp');
-      return result;
+      return AuthSessionResult(AuthIdentity(
+          uid: result.user!.uid, phoneNumber: result.user!.phoneNumber));
     } on FirebaseAuthException catch (error) {
       throw AuthFailure(error.code);
     }
@@ -157,7 +161,7 @@ class UnavailableAuthService implements AuthService {
           const AuthFailure('firebaseUnavailable'));
 
   @override
-  Future<UserCredential> verifyOtp(
+  Future<AuthSessionResult> verifyOtp(
           {required String verificationId, required String smsCode}) =>
-      Future<UserCredential>.error(const AuthFailure('firebaseUnavailable'));
+      Future<AuthSessionResult>.error(const AuthFailure('firebaseUnavailable'));
 }

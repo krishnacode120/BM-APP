@@ -9,6 +9,7 @@ import '../../models/product.dart';
 import '../../services/cart_pricing_service.dart';
 import '../catalog/catalog_providers.dart';
 import '../auth/auth_providers.dart';
+import '../../core/config/backend_config.dart';
 
 final cartPricingServiceProvider = Provider<CartPricingService>((ref) =>
     CartPricingService(ref.watch(productRepositoryProvider),
@@ -21,8 +22,10 @@ class CartNotifier extends Notifier<CartState> {
   String _key = 'cart_guest';
   @override
   CartState build() {
-    final uid = ref.watch(firebaseAuthStateProvider).valueOrNull?.uid;
-    _key = 'cart_${uid ?? 'guest'}';
+    final uid = ref.watch(authStateProvider).valueOrNull?.uid;
+    final prefix =
+        ref.watch(backendConfigProvider).isSupabase ? 'supabase_cart' : 'cart';
+    _key = '${prefix}_${uid ?? 'guest'}';
     final revision = ++_revision;
     ref.onDispose(() => _revision++);
     ref.listen<AsyncValue<DeliveryLocation?>>(selectedLocationProvider,

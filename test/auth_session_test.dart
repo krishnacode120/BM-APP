@@ -8,12 +8,12 @@ import 'package:bm/features/orders/order_providers.dart';
 import 'package:bm/models/cart.dart';
 import 'package:bm/models/product.dart';
 import 'package:bm/repositories/admin_repository.dart';
-import 'package:firebase_auth/firebase_auth.dart';
+import 'package:bm/models/auth_identity.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-class SessionUser extends Fake implements User {
+class SessionUser extends Fake implements AuthIdentity {
   SessionUser(this.uid);
   @override
   final String uid;
@@ -45,10 +45,10 @@ void main() {
   test(
       'admin access and private data refresh after sign-in, sign-out and account change',
       () async {
-    final sessions = StreamController<User?>();
+    final sessions = StreamController<AuthIdentity?>();
     final repository = SessionAdminRepository();
     final container = ProviderContainer(overrides: [
-      firebaseAuthStateProvider.overrideWith((_) => sessions.stream),
+      authStateProvider.overrideWith((_) => sessions.stream),
       adminRepositoryProvider.overrideWithValue(repository),
     ]);
     addTearDown(container.dispose);
@@ -93,9 +93,9 @@ void main() {
       'cart_a': jsonEncode([item.toJson()]),
       'cart_b': '[]',
     });
-    final sessions = StreamController<User?>();
+    final sessions = StreamController<AuthIdentity?>();
     final container = ProviderContainer(overrides: [
-      firebaseAuthStateProvider.overrideWith((_) => sessions.stream),
+      authStateProvider.overrideWith((_) => sessions.stream),
     ]);
     addTearDown(container.dispose);
     addTearDown(sessions.close);
